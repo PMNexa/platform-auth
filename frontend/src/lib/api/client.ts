@@ -56,7 +56,10 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
 
     if (response.status === 401 && !init?.skipAuthRedirect) {
       clearAccessToken();
-      window.location.assign("/login");
+      // BASE_URL always has a trailing slash (Vite's `base` config) - this
+      // stays correct whether this app is served at "/" standalone or
+      // under a path prefix like "/platform-auth/" behind a gateway.
+      window.location.assign(`${import.meta.env.BASE_URL}login`);
     }
 
     throw new ApiError(message, response.status, body);

@@ -60,6 +60,6 @@ class LoginView(APIView):
             secure=settings.REFRESH_COOKIE_SECURE,
             samesite="Lax",
             max_age=settings.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60,
-            path="/api/v1/auth",
+            path=f"{settings.URL_PREFIX}/api/v1/auth",
         )
         return response

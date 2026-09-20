@@ -104,6 +104,12 @@ JWT_ACCESS_TTL_MINUTES = float(os.environ.get("JWT_ACCESS_TTL_MINUTES", "15"))
 JWT_REFRESH_TTL_DAYS = int(os.environ.get("JWT_REFRESH_TTL_DAYS", "30"))
 REFRESH_COOKIE_NAME = "refresh_token"
 REFRESH_COOKIE_SECURE = os.environ.get("DJANGO_DEBUG", "true").lower() != "true"
+# When mounted under a gateway path prefix (e.g. "/platform-auth" - see
+# modules.yaml's url_prefix / nginx/default.conf in the parent platform),
+# the browser's actual requests carry that prefix, so the refresh cookie's
+# Path must too or the browser will never send it back. Empty by default
+# (this module standalone, served at "/").
+URL_PREFIX = os.environ.get("URL_PREFIX", "")
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
