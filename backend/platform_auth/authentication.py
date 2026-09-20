@@ -6,9 +6,9 @@ cookie-based-refresh, header-based-access-token flow with no CSRF token).
 import jwt
 from rest_framework.authentication import BaseAuthentication
 
-from accounts.models import User
-from accounts.security import decode_token
 from core_api.errors import Unauthorized
+from platform_auth.models import User
+from platform_auth.security import decode_token
 
 
 class ActorAuthentication(BaseAuthentication):

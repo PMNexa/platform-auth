@@ -1,6 +1,4 @@
-"""POST /api/v1/auth/login. Signup/refresh/logout are follow-ups - this
-slice covers login only, per the "first with login" scope.
-"""
+"""POST /api/v1/auth/login."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -8,15 +6,15 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import RefreshToken, User
-from accounts.security import (
+from core_api.errors import InvalidCredentialsError
+from platform_auth.models import RefreshToken, User
+from platform_auth.security import (
     create_access_token,
     create_refresh_token,
     hash_refresh_token,
     verify_password_or_dummy,
 )
-from accounts.serializers import LoginSerializer, UserSerializer
-from core_api.errors import InvalidCredentialsError, Unauthorized
+from platform_auth.serializers import LoginSerializer, UserSerializer
 
 
 class LoginView(APIView):
@@ -65,10 +63,3 @@ class LoginView(APIView):
             path="/api/v1/auth",
         )
         return response
-
-
-class MeView(APIView):
-    def get(self, request):
-        if request.user is None:
-            raise Unauthorized()
-        return Response(UserSerializer(request.user).data)

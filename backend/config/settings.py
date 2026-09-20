@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "accounts",
+    "platform_auth",
 ]
 
 MIDDLEWARE = [
@@ -40,7 +40,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "platform_auth.urls"
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
@@ -57,7 +57,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "platform_auth.wsgi.application"
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 def _database_config_from_url(url: str) -> dict:
@@ -109,7 +109,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.ActorAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["platform_auth.authentication.ActorAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": [],
     "EXCEPTION_HANDLER": "core_api.exceptions.platform_auth_exception_handler",
     "UNAUTHENTICATED_USER": None,

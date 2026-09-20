@@ -22,12 +22,18 @@ from enforcing CSRF).
   `manage.py migrate`), not Alembic.** Every model change goes through
   `makemigrations` — do not hand-write SQL migrations unless doing
   something `makemigrations` can't express (e.g. a data migration).
-- `accounts/models.py` — `User`, `RefreshToken`. No `Actor`/`AIAgent`
-  polymorphism (unlike platform-core) — add that later only if an
-  agent-facing module actually needs it.
-- `accounts/security.py` — argon2 password hashing (with a timing-safe
-  dummy-hash check on login), JWT access tokens (PyJWT HS256), opaque
-  refresh tokens (SHA-256-hashed at rest).
+- Django project config lives in `config/` (settings/urls/wsgi/asgi); the
+  actual app is `platform_auth/` — named after the module itself, not
+  `accounts`, since this repo does nothing else.
+- `platform_auth/models/`, `serializers/`, `views/` — one class per file,
+  re-exported from each package's `__init__.py`. Follow this layout for
+  new models/serializers/views rather than growing a flat `models.py`.
+- `platform_auth/models/user.py`, `refresh_token.py` — `User`,
+  `RefreshToken`. No `Actor`/`AIAgent` polymorphism (unlike platform-core)
+  — add that later only if an agent-facing module actually needs it.
+- `platform_auth/security.py` — argon2 password hashing (with a
+  timing-safe dummy-hash check on login), JWT access tokens (PyJWT HS256),
+  opaque refresh tokens (SHA-256-hashed at rest).
 - `POST /api/v1/auth/login` — the only real endpoint so far. Issues a JWT
   access token in the response body + sets an httpOnly refresh-token
   cookie scoped to `/api/v1/auth`.
