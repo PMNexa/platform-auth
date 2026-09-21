@@ -45,6 +45,18 @@ from enforcing CSRF).
 Not built yet (deliberately out of scope for "first with login"): signup,
 refresh-token rotation endpoint, logout, login rate limiting.
 
+Also an **importable pip package**: `pyproject.toml` at this directory's
+root packages `platform_auth` (the Django app) and `core_api` (the
+error-contract/exception-handler support it needs) as importable units
+— no build step, `pip install -e .` symlinks straight to this source.
+`apps/main/backend` does exactly this (editable-installs it, adds
+`"platform_auth"` to its own `INSTALLED_APPS`, mounts `platform_auth.urls`
+at the same `api/v1/auth/` prefix this repo's own `config/urls.py` uses)
+— see its own AGENTS.md for the backend half of the "module packaged,
+main imports it" rule. Because the prefix matches exactly, this app's
+own `settings.URL_PREFIX`-based cookie-path logic needs no changes to
+work correctly when imported this way.
+
 ## Frontend (`frontend/`)
 
 React + Vite + TypeScript, and also an **npm package**: `package.json`
