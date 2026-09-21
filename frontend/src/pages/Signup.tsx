@@ -52,7 +52,7 @@ function Signup({ onSuccess }: SignupProps) {
             <div className="card">
               <div className="card-body p-4">
                 <p className="text-center mb-3">Create your account</p>
-                <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="name">Name</label>
                     <input

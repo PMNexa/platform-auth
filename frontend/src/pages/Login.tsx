@@ -59,7 +59,7 @@ function Login({ onSuccess }: LoginProps) {
             <div className="card">
               <div className="card-body p-4">
                 <p className="text-center mb-3">Sign in to start your session</p>
-                <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="email">Email</label>
                     <input
