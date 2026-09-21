@@ -56,9 +56,18 @@ from enforcing CSRF).
   `User.email` unique constraint + `IntegrityError`, not a pre-check —
   avoids a check-then-insert race).
 - `GET /api/v1/auth/me` — bearer-token-protected, 401s with no token.
+- `POST /api/v1/auth/refresh` — exchanges the httpOnly refresh cookie for
+  a new access token + a NEW rotated refresh cookie (single-use: the old
+  one is revoked via an atomic conditional `UPDATE`, `revoked_at__isnull=True`
+  in the `WHERE`, checking the row count — two concurrent requests
+  presenting the same cookie: exactly one wins, the other 401s). The new
+  token inherits the ORIGINAL token's absolute `expires_at` rather than
+  getting a fresh `JWT_REFRESH_TTL_DAYS` window each time — caps total
+  session lifetime at the first login's TTL no matter how many times it's
+  refreshed. This is what makes "stay logged in across a reload" work —
+  see the frontend section below.
 
-Not built yet (deliberately out of scope): refresh-token rotation
-endpoint, logout, login rate limiting.
+Not built yet (deliberately out of scope): logout, login rate limiting.
 
 Also an **importable pip package**: `pyproject.toml` at this directory's
 root packages `platform_auth` (the Django app) and `core_api` (the
@@ -105,6 +114,20 @@ module (e.g. passing the token into `platform-org-frontend`'s
 `OrgsScreen`, which takes it as a plain prop rather than owning any auth
 state itself). This module never needs to know that happens; it just
 hands back what it already has.
+
+`index.ts` also exports a plain `refreshSession()` function (not tied to
+either screen) — a host calls this ONCE at its own app boot to restore a
+session that survived a page reload (the access token itself is
+memory-only, per `lib/auth/tokenStore.ts`'s own docstring, but the
+refresh cookie persists). **Deduplicates concurrent calls into one
+shared in-flight promise** (`lib/api/auth.ts`'s `refresh()`) - the
+backend's refresh token is single-use/rotating, so two callers hitting
+it around the same moment would otherwise race for the same cookie, one
+legitimately 401ing. This isn't a hypothetical: React's `StrictMode`
+(on by default in `create-react-router`'s scaffold) double-invokes
+effects in dev specifically to catch exactly this class of bug — a host
+calling `refreshSession()` from a plain `useEffect` on mount hits it
+immediately without the dedup.
 
 (This package previously also shipped as a Module Federation remote,
 exported as `RemoteLogin` — that approach is superseded by the plain

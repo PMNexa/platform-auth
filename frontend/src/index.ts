@@ -15,6 +15,9 @@
  * "/auth/login" and "/auth/signup" - that nesting choice belongs to the
  * host, this package only names its own bare segments.
  */
+import { refresh } from "./lib/api/auth";
+import type { Session } from "./lib/api/auth";
+
 export { default as LoginScreen } from "./screens/LoginScreen";
 export { default as SignupScreen } from "./screens/SignupScreen";
 export const BASE_PATH = "auth";
@@ -25,4 +28,20 @@ export const SIGNUP_PATH = "signup";
 // it to make its own authenticated calls afterward (e.g. to another
 // module's API), without needing to know anything about how this module
 // stores/manages the token internally.
-export type { Session } from "./lib/api/auth";
+export type { Session };
+
+/**
+ * Exchanges the httpOnly refresh cookie for a fresh access token -
+ * exported as a plain function, not tied to either screen, so a host can
+ * call it once at its own app boot (before any screen has even
+ * rendered) to restore a session that survived a page reload. The
+ * access token itself is memory-only (see `lib/auth/tokenStore.ts`'s own
+ * docstring); the refresh cookie is what actually persists. Rejects
+ * (throws `ApiError`, status 401) if there's no valid cookie - a host
+ * should treat that as "no existing session", not surface it as an
+ * error. Returns the same `Session` shape the screens' `onSuccess` does.
+ */
+export async function refreshSession(): Promise<Session> {
+  const response = await refresh();
+  return { accessToken: response.access_token, user: response.user };
+}
