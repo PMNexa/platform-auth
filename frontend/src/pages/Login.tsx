@@ -15,12 +15,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export interface LoginProps {
   /**
    * Deliberately no react-router-dom dependency in this component (no
-   * useNavigate) - when federated into another app's page, a bundled
-   * react-router-dom would be a SEPARATE module instance from the host's,
-   * so its Context wouldn't match the host's Router and useNavigate()
-   * would throw even though the component visually renders fine. Callers
-   * that need routing (this app's own App.tsx) provide it via this prop
-   * instead.
+   * useNavigate) - a consuming app (this package's own App.tsx for
+   * standalone dev, or a host app like apps/main importing RemoteLogin)
+   * may be on a different react-router major version entirely, or a
+   * separate module instance of the same one; either way useNavigate()
+   * would throw even though the component visually renders fine.
+   * Callers that need routing provide it via this prop instead.
    */
   onSuccess: () => void;
 }

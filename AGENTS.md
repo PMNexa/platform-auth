@@ -47,27 +47,37 @@ refresh-token rotation endpoint, logout, login rate limiting.
 
 ## Frontend (`frontend/`)
 
-React + Vite + TypeScript. Login page (standalone route) plus
-`src/remote/RemoteLogin.tsx` — a self-contained Module Federation export
-(bundles its own `AuthProvider`, no host wiring needed) that platform-core's
-frontend loads and renders inline at runtime, see `vite.config.ts`'s
-`federation()` plugin (`exposes`). `pages/Login.tsx` deliberately has no
-`react-router-dom` dependency (no `useNavigate`) — a bundled
-react-router-dom would be a SEPARATE module instance from a federating
-host's, so its Context wouldn't match and `useNavigate()` would throw
-even though the component renders. Routing-dependent behavior is passed
-in via the `onSuccess` prop instead (see `App.tsx`'s `LoginRoute` wrapper
-for the standalone case).
+React + Vite + TypeScript, and also an **npm package**: `package.json`
+has `"name": "platform-auth-frontend"` and an `exports` field
+(`src/index.ts`) so another app can add it as a `file:` dependency and
+import straight from source (no build step — the consumer's own Vite
+processes the TS/TSX). `apps/main` does exactly this; see its own
+AGENTS.md for the "apps provide router/screen, packaged as package, main
+calls on it" rule this repo follows.
 
-**Module Federation's remote side needs a real build, not `vite dev`** —
-Vite's dev server has no bundling step to emit `remoteEntry.js` from (dev
-mode works fine on host apps, just not remotes). Run
-`vite build --watch` + `vite preview` instead (see root `docker-compose.yml`);
-`--watch` rebuilds on save (not true HMR, but close).
+`src/remote/RemoteLogin.tsx` (exported as `RemoteLogin`) is the
+package's actual export — self-contained (bundles its own
+`AuthProvider`, zero host wiring needed). `pages/Login.tsx` (which it
+wraps) deliberately has no `react-router` dependency (no `useNavigate`)
+— a consuming app may be on a completely different `react-router` major
+version (main: v8; this app's own standalone `App.tsx`: v7) or just a
+separate module instance of the same one, either way `useNavigate()`
+would throw even though the component renders fine. Routing-dependent
+behavior (redirect after login) is passed in via the `onSuccess` prop
+instead — see `App.tsx`'s `LoginRoute` wrapper for this repo's own
+standalone use, or `apps/main/frontend/app/routes/login.tsx` for the
+package-consumer's use.
+
+(This package previously also shipped as a Module Federation remote —
+that approach is superseded by the plain package-import rule above; the
+`federation()` vite plugin config was removed. `RemoteLogin`'s name is a
+leftover from that era, kept because it's still accurate — "the
+component a remote/external caller renders" — not because federation is
+still in use.)
 
 ## Running locally
 
 ```
 cd backend && source .venv/bin/activate && python manage.py runserver
-cd frontend && npm run dev   # standalone dev - federation not needed for this alone
+cd frontend && npm run dev   # standalone dev
 ```

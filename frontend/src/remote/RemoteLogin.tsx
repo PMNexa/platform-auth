@@ -3,12 +3,12 @@ import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Login from "../pages/Login";
 
 /**
- * The module-federation-exposed entry point (see vite.config.ts's
- * `exposes` map) - self-contained on purpose: bundles its own
- * AuthProvider so a host app doesn't need to know anything about this
- * module's internal auth state to render it. No react-router-dom
- * dependency (see Login's own docstring for why that matters for
- * federation specifically).
+ * This package's exported login screen (see src/index.ts) - self-
+ * contained on purpose: bundles its own AuthProvider so a host app
+ * doesn't need to know anything about this module's internal auth state
+ * to render it. No react-router-dom dependency, deliberately - a
+ * consuming app owns all routing/paths itself (see Login's own
+ * docstring); this is a screen, not a router.
  */
 function RemoteLoginInner({ onSuccess }: { onSuccess?: () => void }) {
   const { user } = useAuth();

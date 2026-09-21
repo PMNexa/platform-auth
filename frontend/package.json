@@ -1,8 +1,11 @@
 {
-  "name": "frontend",
+  "name": "platform-auth-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -11,7 +14,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
-    "@module-federation/vite": "^1.22.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.88.0",
