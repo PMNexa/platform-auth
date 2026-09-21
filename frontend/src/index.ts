@@ -2,7 +2,7 @@
  * Package entry point - what a consuming app (apps/main) imports.
  *
  * Exports both halves a host needs to wire up one screen: the PAGE
- * (`RemoteLogin` - self-contained, bundles its own AuthProvider, no
+ * (`LoginScreen` - self-contained, bundles its own AuthProvider, no
  * react-router dependency, see that file's own docstring) and the ROUTE
  * (`LOGIN_PATH` - this module's own suggested URL segment, so the host
  * doesn't have to hardcode/guess a path that might drift from what this
@@ -12,5 +12,5 @@
  * apps/main/frontend/app/routes.ts + app/routes/login.tsx for the
  * consumer-side wiring this pairs with.
  */
-export { default as RemoteLogin } from "./remote/RemoteLogin";
+export { default as LoginScreen } from "./screens/LoginScreen";
 export const LOGIN_PATH = "login";

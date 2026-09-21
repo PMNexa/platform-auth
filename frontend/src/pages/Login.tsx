@@ -16,7 +16,7 @@ export interface LoginProps {
   /**
    * Deliberately no react-router-dom dependency in this component (no
    * useNavigate) - a consuming app (this package's own App.tsx for
-   * standalone dev, or a host app like apps/main importing RemoteLogin)
+   * standalone dev, or a host app like apps/main importing LoginScreen)
    * may be on a different react-router major version entirely, or a
    * separate module instance of the same one; either way useNavigate()
    * would throw even though the component visually renders fine.

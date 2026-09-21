@@ -10,7 +10,7 @@ import Login from "../pages/Login";
  * consuming app owns all routing/paths itself (see Login's own
  * docstring); this is a screen, not a router.
  */
-function RemoteLoginInner({ onSuccess }: { onSuccess?: () => void }) {
+function LoginScreenInner({ onSuccess }: { onSuccess?: () => void }) {
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -32,10 +32,10 @@ function RemoteLoginInner({ onSuccess }: { onSuccess?: () => void }) {
   );
 }
 
-export default function RemoteLogin(props: { onSuccess?: () => void }) {
+export default function LoginScreen(props: { onSuccess?: () => void }) {
   return (
     <AuthProvider>
-      <RemoteLoginInner {...props} />
+      <LoginScreenInner {...props} />
     </AuthProvider>
   );
 }

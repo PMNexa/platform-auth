@@ -55,25 +55,24 @@ processes the TS/TSX). `apps/main` does exactly this; see its own
 AGENTS.md for the "apps provide router/screen, packaged as package, main
 calls on it" rule this repo follows.
 
-`src/remote/RemoteLogin.tsx` (exported as `RemoteLogin`) is the
-package's actual export — self-contained (bundles its own
-`AuthProvider`, zero host wiring needed). `pages/Login.tsx` (which it
-wraps) deliberately has no `react-router` dependency (no `useNavigate`)
-— a consuming app may be on a completely different `react-router` major
-version (main: v8; this app's own standalone `App.tsx`: v7) or just a
-separate module instance of the same one, either way `useNavigate()`
-would throw even though the component renders fine. Routing-dependent
-behavior (redirect after login) is passed in via the `onSuccess` prop
-instead — see `App.tsx`'s `LoginRoute` wrapper for this repo's own
-standalone use, or `apps/main/frontend/app/routes/login.tsx` for the
-package-consumer's use.
+`src/screens/LoginScreen.tsx` (exported as `LoginScreen`, alongside
+`LOGIN_PATH`) is the package's actual export — self-contained (bundles
+its own `AuthProvider`, zero host wiring needed). `pages/Login.tsx`
+(which it wraps) deliberately has no `react-router` dependency (no
+`useNavigate`) — a consuming app may be on a completely different
+`react-router` major version (main: v8; this app's own standalone
+`App.tsx`: v7) or just a separate module instance of the same one,
+either way `useNavigate()` would throw even though the component renders
+fine. Routing-dependent behavior (redirect after login) is passed in via
+the `onSuccess` prop instead — see `App.tsx`'s `LoginRoute` wrapper for
+this repo's own standalone use, or
+`apps/main/frontend/app/routes/login.tsx` for the package-consumer's use.
 
-(This package previously also shipped as a Module Federation remote —
-that approach is superseded by the plain package-import rule above; the
-`federation()` vite plugin config was removed. `RemoteLogin`'s name is a
-leftover from that era, kept because it's still accurate — "the
-component a remote/external caller renders" — not because federation is
-still in use.)
+(This package previously also shipped as a Module Federation remote,
+exported as `RemoteLogin` — that approach is superseded by the plain
+package-import rule above; the `federation()` vite plugin config was
+removed and the component renamed to `LoginScreen` since "remote"
+stopped being accurate.)
 
 ## Running locally
 
