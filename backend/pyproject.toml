@@ -13,10 +13,16 @@ dependencies = [
     "python-dotenv>=1.0",
     "uuid6>=2024.1.12",
 ]
+# platform-core-backend (core_api: errors/exceptions/pagination/filters/
+# uuid7 utils, BaseSerializer/BaseViewSet) is a real runtime dependency,
+# not listed here - it isn't published anywhere pip can resolve a name
+# to, so whoever installs this package must also `pip install -e` a
+# checkout of apps/platform-core/backend (apps/main's docker-compose does
+# this already; see AGENTS.md).
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["platform_auth*", "core_api*"]
+include = ["platform_auth*"]

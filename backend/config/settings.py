@@ -117,6 +117,6 @@ CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["platform_auth.authentication.ActorAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": [],
-    "EXCEPTION_HANDLER": "core_api.exceptions.platform_auth_exception_handler",
+    "EXCEPTION_HANDLER": "core_api.exceptions.platform_exception_handler",
     "UNAUTHENTICATED_USER": None,
 }

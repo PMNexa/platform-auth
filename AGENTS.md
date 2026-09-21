@@ -6,9 +6,17 @@ deployable modules (successor to trying to build one big `platform-core`
 monolith for auth+orgs+RBAC+CRUD — that work is parked; this repo only
 does login, scoped deliberately narrow).
 
-No source-level dependency on platform-core or any other module. Modules
-in this architecture share nothing at the source/DB level, only HTTP
-contracts.
+No source-level dependency on any OTHER module (platform-org, etc.) -
+those still share nothing but HTTP contracts. **`platform-core` is the
+one exception**: this repo used to vendor its own copy of `core_api`
+(errors/exceptions/utils), a deliberate "share nothing" choice from
+platform-core's Module-Federation-era, not-in-active-use period. Now that
+platform-core owns real, nontrivial shared code (`BaseSerializer`/
+`BaseViewSet` - see its own AGENTS.md) worth NOT re-vendoring everywhere,
+this repo depends on it for real: `core_api/` was deleted from here, and
+whoever installs this package must also `pip install -e` a checkout of
+`apps/platform-core/backend` (`apps/main`'s `docker-compose.yml` does
+this; this repo's own `Dockerfile` does too, see below).
 
 ## Backend (`backend/`)
 
@@ -138,6 +146,13 @@ stopped being accurate.)
 ## Running locally
 
 ```
-cd backend && source .venv/bin/activate && python manage.py runserver
+cd backend && source .venv/bin/activate && pip install -r requirements.txt -e ../../platform-core/backend && python manage.py runserver
 cd frontend && npm run dev   # standalone dev
+```
+
+The standalone `Dockerfile` now builds from the **repo root**, not this
+directory, since it needs `apps/platform-core/backend` alongside its own
+files:
+```
+docker build -f apps/platform-auth/backend/Dockerfile -t platform-auth-backend .
 ```

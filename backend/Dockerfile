@@ -1,3 +1,8 @@
+# core_api (errors/exceptions/pagination/filters/uuid7 utils,
+# BaseSerializer/BaseViewSet) now comes from the sibling apps/platform-core
+# module instead of being vendored here - build this image from the repo
+# root, not from this directory:
+#   docker build -f apps/platform-auth/backend/Dockerfile -t platform-auth-backend .
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -5,12 +10,13 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY requirements.txt manage.py ./
-COPY config ./config
-COPY core_api ./core_api
-COPY platform_auth ./platform_auth
+COPY apps/platform-core/backend /platform-core
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY apps/platform-auth/backend/requirements.txt apps/platform-auth/backend/manage.py ./
+COPY apps/platform-auth/backend/config ./config
+COPY apps/platform-auth/backend/platform_auth ./platform_auth
+
+RUN pip install --no-cache-dir -r requirements.txt -e /platform-core
 
 EXPOSE 8000
 
