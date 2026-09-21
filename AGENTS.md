@@ -34,16 +34,20 @@ from enforcing CSRF).
 - `platform_auth/security.py` — argon2 password hashing (with a
   timing-safe dummy-hash check on login), JWT access tokens (PyJWT HS256),
   opaque refresh tokens (SHA-256-hashed at rest).
-- `POST /api/v1/auth/login` — the only real endpoint so far. Issues a JWT
-  access token in the response body + sets an httpOnly refresh-token
-  cookie scoped to `${URL_PREFIX}/api/v1/auth` — `URL_PREFIX` (env,
-  defaults empty) must match wherever this module is mounted behind a
-  gateway (e.g. `/platform-auth`), or the browser silently never sends
-  the cookie back.
+- `POST /api/v1/auth/login`, `POST /api/v1/auth/signup` — both issue the
+  same session shape (`views/_session.py`'s `issue_session_response`,
+  shared so the two views don't duplicate the JWT-issuing/refresh-cookie
+  logic): JWT access token in the body, httpOnly refresh-token cookie
+  scoped to `${URL_PREFIX}/api/v1/auth` — `URL_PREFIX` (env, defaults
+  empty) must match wherever this module is mounted behind a gateway
+  (e.g. `/platform-auth`), or the browser silently never sends the cookie
+  back. Signup 409s `email_taken` on a duplicate email (relies on the
+  `User.email` unique constraint + `IntegrityError`, not a pre-check —
+  avoids a check-then-insert race).
 - `GET /api/v1/auth/me` — bearer-token-protected, 401s with no token.
 
-Not built yet (deliberately out of scope for "first with login"): signup,
-refresh-token rotation endpoint, logout, login rate limiting.
+Not built yet (deliberately out of scope): refresh-token rotation
+endpoint, logout, login rate limiting.
 
 Also an **importable pip package**: `pyproject.toml` at this directory's
 root packages `platform_auth` (the Django app) and `core_api` (the
@@ -67,18 +71,21 @@ processes the TS/TSX). `apps/main` does exactly this; see its own
 AGENTS.md for the "apps provide router/screen, packaged as package, main
 calls on it" rule this repo follows.
 
-`src/screens/LoginScreen.tsx` (exported as `LoginScreen`, alongside
-`LOGIN_PATH`) is the package's actual export — self-contained (bundles
-its own `AuthProvider`, zero host wiring needed). `pages/Login.tsx`
-(which it wraps) deliberately has no `react-router` dependency (no
-`useNavigate`) — a consuming app may be on a completely different
-`react-router` major version (main: v8; this app's own standalone
-`App.tsx`: v7) or just a separate module instance of the same one,
-either way `useNavigate()` would throw even though the component renders
-fine. Routing-dependent behavior (redirect after login) is passed in via
-the `onSuccess` prop instead — see `App.tsx`'s `LoginRoute` wrapper for
-this repo's own standalone use, or
-`apps/main/frontend/app/routes/login.tsx` for the package-consumer's use.
+`src/screens/LoginScreen.tsx` / `SignupScreen.tsx` (exported alongside
+`BASE_PATH`/`LOGIN_PATH`/`SIGNUP_PATH`) are the package's actual
+exports — self-contained (bundle their own `AuthProvider`, zero host
+wiring needed). `pages/Login.tsx`/`Signup.tsx` (which they wrap)
+deliberately have no `react-router` dependency (no `useNavigate`) — a
+consuming app may be on a completely different `react-router` major
+version (main: v8; this app's own standalone `App.tsx`: v7) or just a
+separate module instance of the same one, either way `useNavigate()`
+would throw even though the component renders fine. Routing-dependent
+behavior (redirect after success) is passed in via the `onSuccess` prop
+instead — see `App.tsx`'s `LoginRoute`/`SignupRoute` wrappers for this
+repo's own standalone use, or `apps/main/frontend/app/routes/login.tsx` /
+`signup.tsx` for the package-consumer's use. `apps/main` mounts both
+under `BASE_PATH` ("auth") itself — this package only names its own
+bare segments, nesting is the host's call.
 
 (This package previously also shipped as a Module Federation remote,
 exported as `RemoteLogin` — that approach is superseded by the plain

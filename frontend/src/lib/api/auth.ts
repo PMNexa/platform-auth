@@ -21,6 +21,15 @@ export async function login(email: string, password: string): Promise<LoginRespo
   });
 }
 
+export async function signup(name: string, email: string, password: string): Promise<LoginResponse> {
+  return apiFetch<LoginResponse>("/api/v1/auth/signup", {
+    method: "POST",
+    credentials: "include",
+    skipAuthRedirect: true,
+    body: JSON.stringify({ name, email, password }),
+  });
+}
+
 export async function me(): Promise<UserSummary> {
   return apiFetch<UserSummary>("/api/v1/auth/me");
 }
