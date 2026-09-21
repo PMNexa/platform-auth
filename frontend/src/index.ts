@@ -20,3 +20,9 @@ export { default as SignupScreen } from "./screens/SignupScreen";
 export const BASE_PATH = "auth";
 export const LOGIN_PATH = "login";
 export const SIGNUP_PATH = "signup";
+
+// Both screens' onSuccess callback receives one of these - the host uses
+// it to make its own authenticated calls afterward (e.g. to another
+// module's API), without needing to know anything about how this module
+// stores/manages the token internally.
+export type { Session } from "./lib/api/auth";

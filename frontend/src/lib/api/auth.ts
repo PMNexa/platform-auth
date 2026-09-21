@@ -12,6 +12,12 @@ export interface LoginResponse {
   user: UserSummary;
 }
 
+/** What a host app needs to make its own authenticated calls afterward. */
+export interface Session {
+  accessToken: string;
+  user: UserSummary;
+}
+
 export async function login(email: string, password: string): Promise<LoginResponse> {
   return apiFetch<LoginResponse>("/api/v1/auth/login", {
     method: "POST",

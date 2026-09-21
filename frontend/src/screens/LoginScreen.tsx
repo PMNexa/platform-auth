@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Login from "../pages/Login";
+import type { Session } from "../lib/api/auth";
 
 /**
  * This package's exported login screen (see src/index.ts) - self-
@@ -10,7 +11,7 @@ import Login from "../pages/Login";
  * consuming app owns all routing/paths itself (see Login's own
  * docstring); this is a screen, not a router.
  */
-function LoginScreenInner({ onSuccess }: { onSuccess?: () => void }) {
+function LoginScreenInner({ onSuccess }: { onSuccess?: (session: Session) => void }) {
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -24,15 +25,15 @@ function LoginScreenInner({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <Login
-      onSuccess={() => {
+      onSuccess={(session) => {
         setJustLoggedIn(true);
-        onSuccess?.();
+        onSuccess?.(session);
       }}
     />
   );
 }
 
-export default function LoginScreen(props: { onSuccess?: () => void }) {
+export default function LoginScreen(props: { onSuccess?: (session: Session) => void }) {
   return (
     <AuthProvider>
       <LoginScreenInner {...props} />

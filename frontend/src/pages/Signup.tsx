@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api/client";
+import type { Session } from "../lib/api/auth";
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -15,7 +16,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export interface SignupProps {
   // See Login's own docstring for why this has no react-router dependency.
-  onSuccess: () => void;
+  onSuccess: (session: Session) => void;
 }
 
 function Signup({ onSuccess }: SignupProps) {
@@ -33,8 +34,8 @@ function Signup({ onSuccess }: SignupProps) {
     setError(null);
     setSubmitting(true);
     try {
-      await signup(values.name, values.email, values.password);
-      onSuccess();
+      const session = await signup(values.name, values.email, values.password);
+      onSuccess(session);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {

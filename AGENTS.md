@@ -31,6 +31,17 @@ from enforcing CSRF).
 - `platform_auth/models/user.py`, `refresh_token.py` — `User`,
   `RefreshToken`. No `Actor`/`AIAgent` polymorphism (unlike platform-core)
   — add that later only if an agent-facing module actually needs it.
+  `User.is_authenticated` is a fixed-`True` property (Django's own
+  convention — only `AnonymousUser` is `False`), needed because DRF's
+  built-in `IsAuthenticated` permission class checks that attribute
+  directly; this app's own views never needed it (they do their own
+  `request.user is None` check), but a module imported alongside this one
+  (e.g. `platform-org`, which declares `permission_classes =
+  [IsAuthenticated]` explicitly) hits it the moment `ActorAuthentication`
+  resolves a real `User` instance. Same class of gap as `platform-org`'s
+  own `ActorStub` needing it — check for `'<Model>' object has no
+  attribute 'is_authenticated'` if you add a model that a permission
+  class might see as `request.user`.
 - `platform_auth/security.py` — argon2 password hashing (with a
   timing-safe dummy-hash check on login), JWT access tokens (PyJWT HS256),
   opaque refresh tokens (SHA-256-hashed at rest).
@@ -86,6 +97,14 @@ repo's own standalone use, or `apps/main/frontend/app/routes/login.tsx` /
 `signup.tsx` for the package-consumer's use. `apps/main` mounts both
 under `BASE_PATH` ("auth") itself — this package only names its own
 bare segments, nesting is the host's call.
+
+Both screens' `onSuccess` callback receives a `Session`
+(`{accessToken, user}`, also exported from `index.ts`) — a host captures
+this to make its own authenticated calls afterward against a *different*
+module (e.g. passing the token into `platform-org-frontend`'s
+`OrgsScreen`, which takes it as a plain prop rather than owning any auth
+state itself). This module never needs to know that happens; it just
+hands back what it already has.
 
 (This package previously also shipped as a Module Federation remote,
 exported as `RemoteLogin` — that approach is superseded by the plain

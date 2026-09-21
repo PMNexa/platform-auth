@@ -1,14 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { login as loginRequest, signup as signupRequest } from "../lib/api/auth";
-import type { UserSummary } from "../lib/api/auth";
+import type { Session, UserSummary } from "../lib/api/auth";
 import { clearAccessToken, getAccessToken, setAccessToken as setStoredAccessToken, subscribe } from "../lib/auth/tokenStore";
 
 interface AuthContextValue {
   accessToken: string | null;
   user: UserSummary | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<Session>;
+  signup: (name: string, email: string, password: string) => Promise<Session>;
   logout: () => void;
 }
 
@@ -24,12 +24,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await loginRequest(email, password);
     setStoredAccessToken(response.access_token);
     setUser(response.user);
+    return { accessToken: response.access_token, user: response.user };
   }, []);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
     const response = await signupRequest(name, email, password);
     setStoredAccessToken(response.access_token);
     setUser(response.user);
+    return { accessToken: response.access_token, user: response.user };
   }, []);
 
   const logout = useCallback(() => {

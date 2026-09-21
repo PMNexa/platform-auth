@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api/client";
+import type { Session } from "../lib/api/auth";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Email is required."),
@@ -22,7 +23,7 @@ export interface LoginProps {
    * would throw even though the component visually renders fine.
    * Callers that need routing provide it via this prop instead.
    */
-  onSuccess: () => void;
+  onSuccess: (session: Session) => void;
 }
 
 function Login({ onSuccess }: LoginProps) {
@@ -40,8 +41,8 @@ function Login({ onSuccess }: LoginProps) {
     setError(null);
     setSubmitting(true);
     try {
-      await login(values.email, values.password);
-      onSuccess();
+      const session = await login(values.email, values.password);
+      onSuccess(session);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
