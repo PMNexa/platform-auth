@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,9 +12,21 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-function Login() {
+export interface LoginProps {
+  /**
+   * Deliberately no react-router-dom dependency in this component (no
+   * useNavigate) - when federated into another app's page, a bundled
+   * react-router-dom would be a SEPARATE module instance from the host's,
+   * so its Context wouldn't match the host's Router and useNavigate()
+   * would throw even though the component visually renders fine. Callers
+   * that need routing (this app's own App.tsx) provide it via this prop
+   * instead.
+   */
+  onSuccess: () => void;
+}
+
+function Login({ onSuccess }: LoginProps) {
   const { login } = useAuth();
-  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,7 +41,7 @@ function Login() {
     setSubmitting(true);
     try {
       await login(values.email, values.password);
-      navigate("/dashboard", { replace: true });
+      onSuccess();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {

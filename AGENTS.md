@@ -36,7 +36,10 @@ from enforcing CSRF).
   opaque refresh tokens (SHA-256-hashed at rest).
 - `POST /api/v1/auth/login` — the only real endpoint so far. Issues a JWT
   access token in the response body + sets an httpOnly refresh-token
-  cookie scoped to `/api/v1/auth`.
+  cookie scoped to `${URL_PREFIX}/api/v1/auth` — `URL_PREFIX` (env,
+  defaults empty) must match wherever this module is mounted behind a
+  gateway (e.g. `/platform-auth`), or the browser silently never sends
+  the cookie back.
 - `GET /api/v1/auth/me` — bearer-token-protected, 401s with no token.
 
 Not built yet (deliberately out of scope for "first with login"): signup,
@@ -44,12 +47,27 @@ refresh-token rotation endpoint, logout, login rate limiting.
 
 ## Frontend (`frontend/`)
 
-React + Vite + TypeScript, Tabler design system — matching platform-core's
-frontend stack so the two modules' UIs compose visually. Login page only.
+React + Vite + TypeScript. Login page (standalone route) plus
+`src/remote/RemoteLogin.tsx` — a self-contained Module Federation export
+(bundles its own `AuthProvider`, no host wiring needed) that platform-core's
+frontend loads and renders inline at runtime, see `vite.config.ts`'s
+`federation()` plugin (`exposes`). `pages/Login.tsx` deliberately has no
+`react-router-dom` dependency (no `useNavigate`) — a bundled
+react-router-dom would be a SEPARATE module instance from a federating
+host's, so its Context wouldn't match and `useNavigate()` would throw
+even though the component renders. Routing-dependent behavior is passed
+in via the `onSuccess` prop instead (see `App.tsx`'s `LoginRoute` wrapper
+for the standalone case).
+
+**Module Federation's remote side needs a real build, not `vite dev`** —
+Vite's dev server has no bundling step to emit `remoteEntry.js` from (dev
+mode works fine on host apps, just not remotes). Run
+`vite build --watch` + `vite preview` instead (see root `docker-compose.yml`);
+`--watch` rebuilds on save (not true HMR, but close).
 
 ## Running locally
 
 ```
 cd backend && source .venv/bin/activate && python manage.py runserver
-cd frontend && npm run dev
+cd frontend && npm run dev   # standalone dev - federation not needed for this alone
 ```
