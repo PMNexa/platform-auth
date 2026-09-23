@@ -2,6 +2,7 @@
   "name": "platform-auth-frontend",
   "private": true,
   "version": "0.0.0",
+  "license": "PolyForm-Shield-1.0.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
