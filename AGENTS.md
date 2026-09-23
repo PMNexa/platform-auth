@@ -68,14 +68,16 @@ from enforcing CSRF).
   a new access token + a NEW rotated refresh cookie (single-use: the old
   one is revoked via an atomic conditional `UPDATE`, `revoked_at__isnull=True`
   in the `WHERE`, checking the row count — two concurrent requests
-  presenting the same cookie: exactly one wins, the other 401s). The new
-  token inherits the ORIGINAL token's absolute `expires_at` rather than
-  getting a fresh `JWT_REFRESH_TTL_DAYS` window each time — caps total
-  session lifetime at the first login's TTL no matter how many times it's
-  refreshed. This is what makes "stay logged in across a reload" work —
-  see the frontend section below.
+  presenting the same cookie: exactly one wins, the other 401s). Every
+  new refresh token gets a fresh `JWT_REFRESH_TTL_DAYS` window (sliding
+  expiry): a session lasts until logout as long as it's used at least
+  once per window - only an idle one expires. This is what makes "stay
+  logged in across a reload" work — see the frontend section below.
+- `POST /api/v1/auth/logout` — revokes the refresh token behind the
+  cookie (`revoked_reason="logout"`) and deletes the cookie. Needs no
+  access token (it may have expired); 204 even with no/unknown cookie.
 
-Not built yet (deliberately out of scope): logout, login rate limiting.
+Not built yet (deliberately out of scope): login rate limiting.
 
 Also an **importable pip package**: `pyproject.toml` at this directory's
 root packages `platform_auth` (the Django app) and `core_api` (the
@@ -160,6 +162,24 @@ the same cookie, one legitimately 401ing. This isn't hypothetical:
 React's `StrictMode` (on by default in `create-react-router`'s scaffold)
 double-invokes effects in dev, so the host's boot effect calls
 `initSession()` twice.
+
+**The store keeps the access token fresh on its own** (the token lives
+`JWT_ACCESS_TTL_MINUTES`, 15 by default): while a session is held it
+checks every 30s, and on window focus / tab visible / back online,
+whether the token is within 2 minutes of expiring, and refreshes if so.
+"Expiring" is measured on the client's clock (received-at + `exp - iat`),
+not by comparing `exp` to the client's clock - a skewed client clock
+would otherwise refresh nonstop.
+A periodic check rather than one timer set for `exp`, because timers
+pause while the machine sleeps - after a wake the token would already
+be dead. A network error just waits for the next check; a 401 gets one
+retry 2s later (another tab may have rotated the shared cookie at that
+moment) before `clearSession()`. The host keeps passing
+`getSession().accessToken` down as before - it just changes over time.
+`logout()` (also exported) calls the backend's logout, then clears the
+store.
+
+The API client (`lib/api/client.ts`'s `apiRequest`) is axios.
 
 (This package previously also shipped as a Module Federation remote,
 exported as `RemoteLogin` — that approach is superseded by the plain

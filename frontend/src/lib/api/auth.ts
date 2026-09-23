@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiRequest } from "./client";
 
 export interface UserSummary {
   id: string;
@@ -19,25 +19,25 @@ export interface Session {
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  return apiFetch<LoginResponse>("/api/v1/auth/login", {
+  return apiRequest<LoginResponse>("/api/v1/auth/login", {
     method: "POST",
-    credentials: "include",
+    withCredentials: true,
     skipAuthRedirect: true,
-    body: JSON.stringify({ email, password }),
+    data: { email, password },
   });
 }
 
 export async function signup(name: string, email: string, password: string): Promise<LoginResponse> {
-  return apiFetch<LoginResponse>("/api/v1/auth/signup", {
+  return apiRequest<LoginResponse>("/api/v1/auth/signup", {
     method: "POST",
-    credentials: "include",
+    withCredentials: true,
     skipAuthRedirect: true,
-    body: JSON.stringify({ name, email, password }),
+    data: { name, email, password },
   });
 }
 
 export async function me(): Promise<UserSummary> {
-  return apiFetch<UserSummary>("/api/v1/auth/me");
+  return apiRequest<UserSummary>("/api/v1/auth/me");
 }
 
 // The backend ROTATES the refresh token on every call (single-use) - two
@@ -54,13 +54,22 @@ let refreshPromise: Promise<LoginResponse> | null = null;
 
 export function refresh(): Promise<LoginResponse> {
   if (!refreshPromise) {
-    refreshPromise = apiFetch<LoginResponse>("/api/v1/auth/refresh", {
+    refreshPromise = apiRequest<LoginResponse>("/api/v1/auth/refresh", {
       method: "POST",
-      credentials: "include",
+      withCredentials: true,
       skipAuthRedirect: true,
     }).finally(() => {
       refreshPromise = null;
     });
   }
   return refreshPromise;
+}
+
+/** Revokes the refresh token server-side and clears its cookie. */
+export async function logout(): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/logout", {
+    method: "POST",
+    withCredentials: true,
+    skipAuthRedirect: true,
+  });
 }

@@ -40,4 +40,4 @@ class RefreshView(APIView):
         if rows_updated == 0:
             raise Unauthorized()
 
-        return issue_session_response(token.user, refresh_expires_at=token.expires_at)
+        return issue_session_response(token.user)

@@ -1,7 +1,7 @@
 /**
  * Access-token store: plain module-level state, not localStorage/cookie -
  * lost on reload (there's no /refresh endpoint yet to silently restore it,
- * see AGENTS.md). apiFetch is a plain function with no hooks, so it needs a
+ * see AGENTS.md). apiRequest is a plain function with no hooks, so it needs a
  * synchronous non-React way to read/write the token; AuthContext subscribes
  * for re-renders. Ported from platform-core's tokenStore.ts.
  */

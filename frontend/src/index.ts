@@ -25,6 +25,7 @@ export {
   getSession,
   initSession,
   isSessionInitialized,
+  logout,
   refreshSession,
   setSession,
   subscribeSession,
