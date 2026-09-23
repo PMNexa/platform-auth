@@ -99,9 +99,8 @@ processes the TS/TSX). `apps/main` does exactly this; see its own
 AGENTS.md for the "apps provide router/screen, packaged as package, main
 calls on it" rule this repo follows.
 
-`src/screens/LoginScreen.tsx` / `SignupScreen.tsx` (exported alongside
-`BASE_PATH`/`LOGIN_PATH`/`SIGNUP_PATH`) are the package's actual
-exports — self-contained (bundle their own `AuthProvider`, zero host
+`src/screens/LoginScreen.tsx` / `SignupScreen.tsx` are the package's
+screen exports — self-contained (bundle their own `AuthProvider`, zero host
 wiring needed). `pages/Login.tsx`/`Signup.tsx` (which they wrap)
 deliberately have no `react-router` dependency (no `useNavigate`) — a
 consuming app may be on a completely different `react-router` major
@@ -110,32 +109,57 @@ separate module instance of the same one, either way `useNavigate()`
 would throw even though the component renders fine. Routing-dependent
 behavior (redirect after success) is passed in via the `onSuccess` prop
 instead — see `App.tsx`'s `LoginRoute`/`SignupRoute` wrappers for this
-repo's own standalone use, or `apps/main/frontend/app/routes/login.tsx` /
-`signup.tsx` for the package-consumer's use. `apps/main` mounts both
-under `BASE_PATH` ("auth") itself — this package only names its own
-bare segments, nesting is the host's call.
+repo's own standalone use.
 
-Both screens' `onSuccess` callback receives a `Session`
-(`{accessToken, user}`, also exported from `index.ts`) — a host captures
-this to make its own authenticated calls afterward against a *different*
-module (e.g. passing the token into `platform-org-frontend`'s
-`OrgsScreen`, which takes it as a plain prop rather than owning any auth
-state itself). This module never needs to know that happens; it just
-hands back what it already has.
+**Centralized routes for a host (`createAuthRoutes(basePath)`,
+`src/authRoutes.ts`, exported from the main `"."` entry):** every auth
+page (`login`, `signup` → `src/routes/login.tsx`/`signup.tsx`) nested
+under a host-chosen mount - `apps/main` registers the whole module with
+`...createAuthRoutes("auth")` and has no auth route file of its own. On
+success, the route files store the session in this module's own store
+and redirect to `?next=` (same-origin paths only, else `/` - see
+`src/routes/redirect.ts`, which blocks `//host`-style open redirects);
+the host steers the destination by putting `?next=` on its links. Add a
+new auth page (forgot-password, etc.) with a file under `src/routes/` +
+an entry in `createAuthRoutes()`; the host needs no change. Notes:
+- `src/routes/*.tsx` are the only files here allowed to import
+  `react-router` (`useNavigate`/`useSearchParams`); in the host,
+  `resolve.dedupe` resolves it to the host's copy (v8). This package
+  itself declares `react-router@^7` (matching its standalone
+  `react-router-dom@7`) - only APIs common to v7/v8 are used.
+- `authRoutes.ts` rides in the host's CLIENT bundle (the `"."` entry is
+  imported by `root.tsx`), so it must stay browser-safe: no `node:*`
+  imports, nothing computed at module load, paths built by string ops on
+  `import.meta.url` only when called (Node-side, from the host's
+  `routes.ts`). Not `new URL(..., import.meta.url)` - Vite rewrites that
+  into an asset reference. (It doesn't use `platform-core`'s
+  `routeFilePath` helper only because this package has no
+  `platform-core` frontend dependency.)
+- Plain route-config objects rather than `@react-router/dev/routes`'s
+  helpers: that package's v8 peer-depends on `react-router@^8`, which
+  would clash with the standalone app's v7.
 
-`index.ts` also exports a plain `refreshSession()` function (not tied to
-either screen) — a host calls this ONCE at its own app boot to restore a
-session that survived a page reload (the access token itself is
-memory-only, per `lib/auth/tokenStore.ts`'s own docstring, but the
-refresh cookie persists). **Deduplicates concurrent calls into one
-shared in-flight promise** (`lib/api/auth.ts`'s `refresh()`) - the
-backend's refresh token is single-use/rotating, so two callers hitting
-it around the same moment would otherwise race for the same cookie, one
-legitimately 401ing. This isn't a hypothetical: React's `StrictMode`
-(on by default in `create-react-router`'s scaffold) double-invokes
-effects in dev specifically to catch exactly this class of bug — a host
-calling `refreshSession()` from a plain `useEffect` on mount hits it
-immediately without the dedup.
+**Session store (`src/session.ts`, exported from `"."`)** - this module
+owns who's logged in: `getSession`/`subscribeSession`/
+`isSessionInitialized`/`clearSession` for the host to read (e.g.
+`apps/main`'s `app-shell.tsx` hands the access token to other modules'
+screens as a plain prop), `setSession` (written by the login/signup
+routes), and `initSession()` - a host calls it ONCE at app boot (root
+effect) to restore a session that survived a page reload (the access
+token is memory-only, the httpOnly refresh cookie persists), then marks
+the store initialized either way. Protected host routes must wait for
+`isSessionInitialized()` before redirecting to login. Separate from
+`lib/auth/tokenStore.ts` (this module's own API client's token) on
+purpose - that one also backs the standalone app.
+
+`refreshSession()` (raw; `initSession` wraps it) **deduplicates
+concurrent calls into one shared in-flight promise** (`lib/api/auth.ts`'s
+`refresh()`) - the backend's refresh token is single-use/rotating, so
+two callers hitting it around the same moment would otherwise race for
+the same cookie, one legitimately 401ing. This isn't hypothetical:
+React's `StrictMode` (on by default in `create-react-router`'s scaffold)
+double-invokes effects in dev, so the host's boot effect calls
+`initSession()` twice.
 
 (This package previously also shipped as a Module Federation remote,
 exported as `RemoteLogin` — that approach is superseded by the plain
