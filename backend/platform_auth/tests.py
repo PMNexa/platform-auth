@@ -115,3 +115,13 @@ class SetupTests(TestCase):
         second = self.client.post("/api/v1/auth/signup", {**self.body, "email": "bob@t.io"}, format="json")
         self.assertEqual(second.status_code, 200)
         self.assertFalse(RoleAssignment.objects.filter(user__email="bob@t.io", role__name="Admin").exists())
+
+    @override_settings(AUTH_FIRST_RUN_SETUP=False)
+    def test_setup_disabled(self):
+        self.assertFalse(self.client.get("/api/v1/auth/setup").json()["required"])
+        refused = self.client.post("/api/v1/auth/setup", self.body, format="json")
+        self.assertEqual(refused.status_code, 409)
+        self.assertEqual(refused.json()["code"], "setup_disabled")
+        first = self.client.post("/api/v1/auth/signup", self.body, format="json")
+        self.assertEqual(first.status_code, 200)
+        self.assertFalse(RoleAssignment.objects.filter(user__email="ada@t.io", role__name="Admin").exists())

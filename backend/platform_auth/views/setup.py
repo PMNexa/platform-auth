@@ -6,8 +6,14 @@ catalog (permissions + default roles, same as `migrate` does), creates
 the first user and gives them the admin role (`RBAC_ADMIN_ROLE`)
 app-wide. Once any user exists, `POST` is refused for good - it can
 never be used to claim admin on a running install.
+
+A host where strangers sign up (a hosted/SaaS install) sets
+`AUTH_FIRST_RUN_SETUP = False`: setup is then never required, `POST` is
+refused, signup works from the first account on, and the operator's own
+admin comes from `manage.py grant_role <email> Admin`.
 """
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,8 +27,12 @@ from platform_auth.serializers import SignupSerializer
 from platform_auth.views._session import issue_session_response
 
 
+def setup_enabled() -> bool:
+    return getattr(settings, "AUTH_FIRST_RUN_SETUP", True)
+
+
 def setup_required() -> bool:
-    return not User.objects.exists()
+    return setup_enabled() and not User.objects.exists()
 
 
 class SetupView(APIView):
@@ -32,6 +42,8 @@ class SetupView(APIView):
         return Response({"required": setup_required()})
 
     def post(self, request):
+        if not setup_enabled():
+            raise ConflictError("setup_disabled", "First-run setup is turned off here - sign up instead.")
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data

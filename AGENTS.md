@@ -138,6 +138,10 @@ else in the host changes; unset, the module's RBAC tables just sit idle.
   (`routes/useSetupGate.ts`). Note a publicly reachable fresh install
   lets whoever gets there first become admin - finish setup before
   exposing it.
+  A host where strangers sign up (hosted/SaaS) sets
+  `AUTH_FIRST_RUN_SETUP = False`: setup is never required, `POST` is
+  refused (`409 setup_disabled`), signup works from the first account
+  on, and the operator's admin comes from `grant_role` (below).
 - **Bootstrap** (or recovery): `manage.py grant_role <email> <role> [--scope <id>]`.
 - **API** (`rbac_urls.py`): `users` (list/rename - explicit field list,
   never `password_hash`), `roles`, `role-assignments`, `permissions`
