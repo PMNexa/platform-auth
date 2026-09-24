@@ -24,6 +24,7 @@ from platform_auth.rbac.catalog import sync_catalog
 from platform_auth.rbac.settings import admin_role_name
 from platform_auth.security import hash_password
 from platform_auth.serializers import SignupSerializer
+from platform_auth.throttling import SignupRateThrottle
 from platform_auth.views._session import issue_session_response
 
 
@@ -37,6 +38,7 @@ def setup_required() -> bool:
 
 class SetupView(APIView):
     authentication_classes = []
+    throttle_classes = [SignupRateThrottle]
 
     def get(self, request):
         return Response({"required": setup_required()})

@@ -7,12 +7,14 @@ from core_api.errors import ConflictError
 from platform_auth.models import User
 from platform_auth.security import hash_password
 from platform_auth.serializers import SignupSerializer
+from platform_auth.throttling import SignupRateThrottle
 from platform_auth.views._session import issue_session_response
 from platform_auth.views.setup import setup_required
 
 
 class SignupView(APIView):
     authentication_classes = []
+    throttle_classes = [SignupRateThrottle]
 
     def post(self, request):
         # The first account goes through setup, which makes it the admin.

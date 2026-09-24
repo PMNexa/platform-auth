@@ -91,6 +91,16 @@ main imports it" rule. Because the prefix matches exactly, this app's
 own `settings.URL_PREFIX`-based cookie-path logic needs no changes to
 work correctly when imported this way.
 
+**Rate limits** (`platform_auth/throttling.py`): login per client IP
+(`auth_login`) and per account email (`auth_login_email`), signup and
+first-run setup per IP (`auth_signup`), POST only. Rates are the
+host's `REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]`, read per request; a
+scope without a rate isn't limited, so a host opts in. The counts live
+in the `default` cache - give a multi-worker host a shared one - and
+the client IP is DRF's (`NUM_PROXIES` from the end of
+`X-Forwarded-For`). Over the limit: 429 `rate_limited` with
+`Retry-After`, shown by the login/signup screens as-is.
+
 ## RBAC (role-based access control)
 
 Enforced on EVERY `BaseViewSet` resource of the host, not just this

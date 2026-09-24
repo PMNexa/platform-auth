@@ -6,11 +6,13 @@ from core_api.errors import InvalidCredentialsError
 from platform_auth.models import User
 from platform_auth.security import verify_password_or_dummy
 from platform_auth.serializers import LoginSerializer
+from platform_auth.throttling import LoginEmailRateThrottle, LoginRateThrottle
 from platform_auth.views._session import issue_session_response
 
 
 class LoginView(APIView):
     authentication_classes = []
+    throttle_classes = [LoginRateThrottle, LoginEmailRateThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)

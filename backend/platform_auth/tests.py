@@ -5,6 +5,8 @@ module's own resources are used, so they hold in any such host."""
 
 import uuid
 
+from django.conf import settings
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -125,3 +127,55 @@ class SetupTests(TestCase):
         first = self.client.post("/api/v1/auth/signup", self.body, format="json")
         self.assertEqual(first.status_code, 200)
         self.assertFalse(RoleAssignment.objects.filter(user__email="ada@t.io", role__name="Admin").exists())
+
+
+def throttle_rates(**rates):
+    """The host's REST_FRAMEWORK with only these auth rates set."""
+    return {**settings.REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": rates}
+
+
+@override_settings(
+    AUTH_FIRST_RUN_SETUP=False,
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "throttle-tests"}},
+)
+class ThrottleTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient(HTTP_HOST="localhost")
+        self.client.post("/api/v1/auth/signup", {"name": "Ada", "email": "ada@t.io", "password": "correct-horse"}, format="json")
+        cache.clear()
+
+    def login(self, email="ada@t.io", ip="10.0.0.1"):
+        return self.client.post(
+            "/api/v1/auth/login", {"email": email, "password": "wrong-horse"}, format="json", REMOTE_ADDR=ip
+        )
+
+    def test_login_limited_per_ip(self):
+        with override_settings(REST_FRAMEWORK=throttle_rates(auth_login="2/min")):
+            self.assertEqual(self.login().status_code, 401)
+            self.assertEqual(self.login(email="bob@t.io").status_code, 401)
+            limited = self.login(email="eve@t.io")
+            self.assertEqual(limited.status_code, 429)
+            self.assertEqual(limited.json()["code"], "rate_limited")
+            self.assertIn("Retry-After", limited.headers)
+            self.assertEqual(self.login(ip="10.0.0.2").status_code, 401)
+
+    def test_login_limited_per_email_across_ips(self):
+        with override_settings(REST_FRAMEWORK=throttle_rates(auth_login_email="2/min")):
+            self.assertEqual(self.login(ip="10.0.0.1").status_code, 401)
+            self.assertEqual(self.login(email="ADA@t.io", ip="10.0.0.2").status_code, 401)
+            self.assertEqual(self.login(ip="10.0.0.3").status_code, 429)
+            self.assertEqual(self.login(email="bob@t.io", ip="10.0.0.3").status_code, 401)
+
+    def test_signup_limited_per_ip(self):
+        with override_settings(REST_FRAMEWORK=throttle_rates(auth_signup="1/min")):
+            body = {"name": "Bob", "email": "bob@t.io", "password": "correct-horse"}
+            self.assertEqual(self.client.post("/api/v1/auth/signup", body, format="json").status_code, 200)
+            again = self.client.post("/api/v1/auth/signup", {**body, "email": "eve@t.io"}, format="json")
+            self.assertEqual(again.status_code, 429)
+            self.assertEqual(self.client.get("/api/v1/auth/setup").status_code, 200)
+
+    def test_no_rate_means_no_limit(self):
+        with override_settings(REST_FRAMEWORK=throttle_rates()):
+            for _ in range(5):
+                self.assertEqual(self.login().status_code, 401)
