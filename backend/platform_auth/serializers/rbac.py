@@ -41,6 +41,10 @@ class RoleAssignmentSerializer(BaseSerializer):
         extra_kwargs = {"scope_id": {"label": scope_label()}}
         # Gives `scope_id` a picker when the host says what a scope is.
         related_endpoints = {"scope_id": scope_endpoint()} if scope_endpoint() else {}
+        # The access policy decides who may assign in which scope (an
+        # app-wide admin can in any org, member or not) - not whether the
+        # caller could list that org, BaseViewSet's default check.
+        unchecked_related_endpoints = {"scope_id"}
 
     def get_summary(self, obj) -> str:
         where = f"one {scope_label().lower()}" if obj.scope_id else "app-wide"
