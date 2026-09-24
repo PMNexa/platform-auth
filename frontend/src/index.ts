@@ -2,7 +2,7 @@
  * Package entry point - what a consuming app (apps/main) imports.
  *
  * - `createAuthRoutes(basePath)` - the whole `/auth/*` subtree (login,
- *   signup), registered once by the host (see `authRoutes.ts`).
+ *   signup, first-run setup), registered once by the host (see `authRoutes.ts`).
  * - The session store (`getSession`/`subscribeSession`/`initSession`/...,
  *   see `session.ts`) - this module owns who's logged in; the host reads
  *   it (e.g. to hand the access token to other modules' screens).

@@ -7,6 +7,8 @@ in any project as is.
   Patterns are applied when the role is created and to permissions that
   appear later (a new resource) - never re-applied to existing ones, so
   an admin's edits stick.
+- `RBAC_ADMIN_ROLE`: the role first-run setup gives the first user
+  (`views/setup.py`); created (grants_all) if missing. Default "Admin".
 - `RBAC_SCOPE_ENDPOINT`: the API of whatever a scope is (e.g.
   `"/api/v1/orgs"`) - gives `RoleAssignment.scope_id` a picker.
 - `RBAC_SCOPE_LABEL`: what a scope is called in the UI.
@@ -22,6 +24,10 @@ DEFAULT_ROLES = [
 
 def default_roles() -> list[dict]:
     return getattr(settings, "RBAC_DEFAULT_ROLES", DEFAULT_ROLES)
+
+
+def admin_role_name() -> str:
+    return getattr(settings, "RBAC_ADMIN_ROLE", "Admin")
 
 
 def scope_endpoint() -> str | None:

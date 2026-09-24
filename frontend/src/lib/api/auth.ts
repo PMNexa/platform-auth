@@ -36,6 +36,21 @@ export async function signup(name: string, email: string, password: string): Pro
   });
 }
 
+/** First-run onboarding: `required` until the first account exists. */
+export async function setupStatus(): Promise<{ required: boolean }> {
+  return apiRequest<{ required: boolean }>("/api/v1/auth/setup", { skipAuthRedirect: true });
+}
+
+/** Creates the first account and makes it the admin; refused once any user exists. */
+export async function setup(name: string, email: string, password: string): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>("/api/v1/auth/setup", {
+    method: "POST",
+    withCredentials: true,
+    skipAuthRedirect: true,
+    data: { name, email, password },
+  });
+}
+
 export async function me(): Promise<UserSummary> {
   return apiRequest<UserSummary>("/api/v1/auth/me");
 }

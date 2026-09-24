@@ -1,12 +1,12 @@
 /**
  * platform-auth's OWN route list - every auth page this module has
- * (`login`, `signup`), nested under a HOST-chosen mount. A host
+ * (`login`, `signup`, first-run `setup`), nested under a HOST-chosen mount. A host
  * registers the whole module ONCE:
  * ```ts
  * // apps/main/frontend/app/routes.ts
  * import { createAuthRoutes } from "platform-auth-frontend";
  * ...
- * ...createAuthRoutes("auth"),   // -> /auth/login, /auth/signup
+ * ...createAuthRoutes("auth"),   // -> /auth/login, /auth/signup, /auth/setup
  * ```
  * Same `createXRoutes(basePath)` shape as `platform-org-frontend`'s
  * `createOrgsRoutes`. No host-side layout/route file needed: the route
@@ -50,5 +50,6 @@ export function createAuthRoutes(basePath: string): AuthRouteConfigEntry[] {
   return [
     { id: "platform-auth-login", path: `${base}/login`, file: routeFile("login.tsx") },
     { id: "platform-auth-signup", path: `${base}/signup`, file: routeFile("signup.tsx") },
+    { id: "platform-auth-setup", path: `${base}/setup`, file: routeFile("setup.tsx") },
   ];
 }

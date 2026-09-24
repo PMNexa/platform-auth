@@ -125,7 +125,20 @@ else in the host changes; unset, the module's RBAC tables just sit idle.
   `permissions` patterns (`"goals.*"`) apply when the role is created and
   to permissions that appear later, never re-applied - admin edits stick.
   Migration 0003 gave every pre-RBAC user the default roles once.
-- **Bootstrap**: `manage.py grant_role <email> <role> [--scope <id>]`.
+- **First-run onboarding** (`views/setup.py`): until the first user
+  exists, `GET /api/v1/auth/setup` says `{"required": true}` and `POST`
+  (name/email/password, like signup) seeds the catalog (`sync_catalog`),
+  creates that user and gives them `RBAC_ADMIN_ROLE` (default "Admin",
+  created grants_all if missing) app-wide, then logs them in. Refused
+  (`409 setup_done`) once any user exists; signup is refused
+  (`409 setup_required`) until then, so the first account is always the
+  admin. Concurrent setups serialize on the admin role's row lock. The
+  frontend's `setup` page (in `createAuthRoutes`) is the signup form in
+  setup mode; login/signup/setup redirect among themselves by the status
+  (`routes/useSetupGate.ts`). Note a publicly reachable fresh install
+  lets whoever gets there first become admin - finish setup before
+  exposing it.
+- **Bootstrap** (or recovery): `manage.py grant_role <email> <role> [--scope <id>]`.
 - **API** (`rbac_urls.py`): `users` (list/rename - explicit field list,
   never `password_hash`), `roles`, `role-assignments`, `permissions`
   (read-only). Mounted at `api/v1/` - NOT under `auth/` - because

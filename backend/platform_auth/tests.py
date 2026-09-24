@@ -81,3 +81,37 @@ class RBACTests(TestCase):
 
     def test_me_lists_permissions(self):
         self.assertEqual(self.client_for(self.admin).get("/api/v1/auth/me").json()["permissions"], ["*"])
+
+
+@override_settings(CORE_API_ACCESS_POLICY="platform_auth.rbac.policy.RBACPolicy")
+class SetupTests(TestCase):
+    body = {"name": "Ada", "email": "Ada@T.io", "password": "correct-horse"}
+
+    def setUp(self):
+        self.client = APIClient(HTTP_HOST="localhost")
+
+    def test_first_user_becomes_admin(self):
+        self.assertTrue(self.client.get("/api/v1/auth/setup").json()["required"])
+        response = self.client.post("/api/v1/auth/setup", self.body, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("access_token", response.json())
+        user = User.objects.get(email="ada@t.io")
+        self.assertTrue(RoleAssignment.objects.filter(user=user, role__name="Admin", scope_id=None).exists())
+        self.assertTrue(Permission.objects.filter(codename="roles.view").exists())
+        self.assertFalse(self.client.get("/api/v1/auth/setup").json()["required"])
+
+    def test_setup_only_once(self):
+        self.client.post("/api/v1/auth/setup", self.body, format="json")
+        again = self.client.post("/api/v1/auth/setup", {**self.body, "email": "eve@t.io"}, format="json")
+        self.assertEqual(again.status_code, 409)
+        self.assertEqual(again.json()["code"], "setup_done")
+        self.assertFalse(User.objects.filter(email="eve@t.io").exists())
+
+    def test_signup_waits_for_setup(self):
+        response = self.client.post("/api/v1/auth/signup", self.body, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "setup_required")
+        self.client.post("/api/v1/auth/setup", self.body, format="json")
+        second = self.client.post("/api/v1/auth/signup", {**self.body, "email": "bob@t.io"}, format="json")
+        self.assertEqual(second.status_code, 200)
+        self.assertFalse(RoleAssignment.objects.filter(user__email="bob@t.io", role__name="Admin").exists())

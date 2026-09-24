@@ -19,10 +19,13 @@ export interface SignupProps {
   onSuccess: (session: Session) => void;
   /** The heading above the card - e.g. the host app's name or logo. @default "platform-auth" */
   title?: ReactNode;
+  /** First-run onboarding: creates the first account as the admin (`/setup`) instead of signing up. */
+  setup?: boolean;
 }
 
-function Signup({ onSuccess, title = "platform-auth" }: SignupProps) {
-  const { signup } = useAuth();
+function Signup({ onSuccess, title = "platform-auth", setup = false }: SignupProps) {
+  const auth = useAuth();
+  const signup = setup ? auth.setup : auth.signup;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,7 +56,16 @@ function Signup({ onSuccess, title = "platform-auth" }: SignupProps) {
             <h1 className="h1 text-center mb-4">{title}</h1>
             <div className="card">
               <div className="card-body p-4">
-                <p className="text-center mb-3">Create your account</p>
+                {setup ? (
+                  <>
+                    <p className="text-center mb-1 fw-bold">Welcome - let's set things up</p>
+                    <p className="text-center text-secondary mb-3">
+                      Create the first account. It becomes the administrator, with full access including users and roles.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-center mb-3">Create your account</p>
+                )}
                 <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="name">Name</label>
@@ -91,7 +103,7 @@ function Signup({ onSuccess, title = "platform-auth" }: SignupProps) {
                   {error && <div className="alert alert-danger" role="alert">{error}</div>}
                   <div className="d-grid gap-2">
                     <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                      {submitting ? "Creating account..." : "Sign Up"}
+                      {submitting ? "Creating account..." : setup ? "Create admin account" : "Sign Up"}
                     </button>
                   </div>
                 </form>

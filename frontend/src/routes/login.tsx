@@ -3,6 +3,7 @@ import { useAuthScreenConfig } from "../screens/AuthScreenConfig";
 import LoginScreen from "../screens/LoginScreen";
 import { setSession } from "../session";
 import { nextPath } from "./redirect";
+import { useSetupGate } from "./useSetupGate";
 
 /**
  * Route module registered by `createAuthRoutes()` (see `../authRoutes.ts`)
@@ -21,6 +22,7 @@ export default function LoginRoute() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const { title } = useAuthScreenConfig();
+  if (!useSetupGate("login")) return null;
   return (
     <LoginScreen
       title={title}
