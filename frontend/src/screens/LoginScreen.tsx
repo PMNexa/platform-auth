@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Login from "../pages/Login";
 import type { Session } from "../lib/api/auth";
@@ -11,7 +11,7 @@ import type { Session } from "../lib/api/auth";
  * consuming app owns all routing/paths itself (see Login's own
  * docstring); this is a screen, not a router.
  */
-function LoginScreenInner({ onSuccess }: { onSuccess?: (session: Session) => void }) {
+function LoginScreenInner({ onSuccess, title }: LoginScreenProps) {
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -25,6 +25,7 @@ function LoginScreenInner({ onSuccess }: { onSuccess?: (session: Session) => voi
 
   return (
     <Login
+      title={title}
       onSuccess={(session) => {
         setJustLoggedIn(true);
         onSuccess?.(session);
@@ -33,7 +34,13 @@ function LoginScreenInner({ onSuccess }: { onSuccess?: (session: Session) => voi
   );
 }
 
-export default function LoginScreen(props: { onSuccess?: (session: Session) => void }) {
+export interface LoginScreenProps {
+  onSuccess?: (session: Session) => void;
+  /** The heading above the card; overrides `AuthScreenProvider`'s. @default "platform-auth" */
+  title?: ReactNode;
+}
+
+export default function LoginScreen(props: LoginScreenProps) {
   return (
     <AuthProvider>
       <LoginScreenInner {...props} />

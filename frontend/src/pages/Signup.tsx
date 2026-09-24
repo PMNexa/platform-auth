@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,9 +17,11 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export interface SignupProps {
   // See Login's own docstring for why this has no react-router dependency.
   onSuccess: (session: Session) => void;
+  /** The heading above the card - e.g. the host app's name or logo. @default "platform-auth" */
+  title?: ReactNode;
 }
 
-function Signup({ onSuccess }: SignupProps) {
+function Signup({ onSuccess, title = "platform-auth" }: SignupProps) {
   const { signup } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +50,7 @@ function Signup({ onSuccess }: SignupProps) {
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-6 col-lg-4">
-            <h1 className="h1 text-center mb-4">platform-auth</h1>
+            <h1 className="h1 text-center mb-4">{title}</h1>
             <div className="card">
               <div className="card-body p-4">
                 <p className="text-center mb-3">Create your account</p>
@@ -59,7 +61,7 @@ function Signup({ onSuccess }: SignupProps) {
                       id="name"
                       type="text"
                       autoComplete="name"
-                      className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                      className={`form-control form-control-sm ${errors.name ? "is-invalid" : ""}`}
                       {...register("name")}
                     />
                     {errors.name && <div className="invalid-feedback">{errors.name.message}</div>}
@@ -70,7 +72,7 @@ function Signup({ onSuccess }: SignupProps) {
                       id="email"
                       type="email"
                       autoComplete="email"
-                      className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                      className={`form-control form-control-sm ${errors.email ? "is-invalid" : ""}`}
                       {...register("email")}
                     />
                     {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
@@ -81,14 +83,14 @@ function Signup({ onSuccess }: SignupProps) {
                       id="password"
                       type="password"
                       autoComplete="new-password"
-                      className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                      className={`form-control form-control-sm ${errors.password ? "is-invalid" : ""}`}
                       {...register("password")}
                     />
                     {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
                   </div>
                   {error && <div className="alert alert-danger" role="alert">{error}</div>}
                   <div className="d-grid gap-2">
-                    <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
                       {submitting ? "Creating account..." : "Sign Up"}
                     </button>
                   </div>

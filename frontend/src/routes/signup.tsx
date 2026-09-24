@@ -1,4 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router";
+import { useAuthScreenConfig } from "../screens/AuthScreenConfig";
 import SignupScreen from "../screens/SignupScreen";
 import { setSession } from "../session";
 import { nextPath } from "./redirect";
@@ -12,8 +13,10 @@ export function meta() {
 export default function SignupRoute() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
+  const { title } = useAuthScreenConfig();
   return (
     <SignupScreen
+      title={title}
       onSuccess={(session) => {
         setSession(session);
         navigate(nextPath(search), { replace: true });

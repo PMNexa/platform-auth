@@ -91,6 +91,69 @@ main imports it" rule. Because the prefix matches exactly, this app's
 own `settings.URL_PREFIX`-based cookie-path logic needs no changes to
 work correctly when imported this way.
 
+## RBAC (role-based access control)
+
+Enforced on EVERY `BaseViewSet` resource of the host, not just this
+module's: `platform_auth.rbac.policy.RBACPolicy` plugs into platform-core's
+access-policy hook (`core_api/access.py`) once the host sets
+`CORE_API_ACCESS_POLICY = "platform_auth.rbac.policy.RBACPolicy"`. Nothing
+else in the host changes; unset, the module's RBAC tables just sit idle.
+
+- **Model** (`models/rbac.py`): `Permission` (`<resource>.<verb>`, verbs
+  `view/create/update/delete`, resource = last segment of the endpoint
+  registered with `register_model_endpoint`), `Role` (a set of
+  permissions, or `grants_all`; `is_default` roles go to every new user
+  app-wide - `rbac/signals.py`), `RoleAssignment` (user + role +
+  `scope_id`: empty = app-wide, set = only within that scope).
+- **Scopes**: what a scope IS is the host's call. A resource opts in with
+  `scope_field` on its viewset - a lookup path to the scope id (goalnexa:
+  goals `org_id`, metrics `goal__org_id`, check-ins
+  `metric__goal__org_id`; platform-org: orgs `id`). A scoped role then
+  applies to rows whose `scope_field` holds that id; unscoped rows (no
+  `scope_field`, or empty - a personal goal) need an app-wide role.
+  `RBAC_SCOPE_ENDPOINT`/`RBAC_SCOPE_LABEL` give `scope_id` a picker/label.
+- **Rules** (`rbac/policy.py`): rights are the union of every role held;
+  lists show only rows the user may `view` (a row they can't view is a
+  404 for other verbs too); create and update are re-checked against the
+  SAVED row inside a transaction (rolled back on denial), so nothing can
+  be created in, or moved into, a scope without rights there. Layered on
+  top of each viewset's own scoping (owner-only goals stay owner-only).
+- **Catalog** (`rbac/catalog.py`): permissions are synced from the
+  registered resources after every `migrate` (post_migrate) or
+  `manage.py sync_rbac` - never created by hand (the API is read-only).
+  `RBAC_DEFAULT_ROLES` (host settings) are created when missing; their
+  `permissions` patterns (`"goals.*"`) apply when the role is created and
+  to permissions that appear later, never re-applied - admin edits stick.
+  Migration 0003 gave every pre-RBAC user the default roles once.
+- **Bootstrap**: `manage.py grant_role <email> <role> [--scope <id>]`.
+- **API** (`rbac_urls.py`): `users` (list/rename - explicit field list,
+  never `password_hash`), `roles`, `role-assignments`, `permissions`
+  (read-only). Mounted at `api/v1/` - NOT under `auth/` - because
+  platform-core's generic CRUD pages find a resource's API at
+  `/api/v1/<its URL segment>`. `GET /api/v1/auth/me` adds `permissions`
+  (app-wide codenames, `["*"]` for grants_all).
+- **Delegation caveat**: someone holding `role-assignments.*` within a
+  scope can assign any role there (including a grants_all one) - scoped
+  to that scope only, but grant it knowingly. Picking a user/role in the
+  form still needs app-wide `users.view`/`roles.view`.
+- **Tests**: `tests.py` - run in a host with the policy on
+  (`apps/main`: `python manage.py test platform_auth`). A module whose
+  tests use role-less stand-in actors (goalnexa's) turns the policy off
+  with `override_settings(CORE_API_ACCESS_POLICY=None)`.
+
+Frontend: `createRbacNavItems(basePath)` (`src/rbacNav.tsx` - the
+"Access control" sidebar group, Users + Roles, each with its
+`permission`; same `basePath` as the routes; apps/main spreads it into
+`app-shell.tsx`'s `NAV_ITEMS` and filters with `filterNavByPermissions`),
+`createRbacRoutes(basePath)` (users/roles/role-assignments/
+permissions via platform-core's `createCrudRoutes` - role permissions are
+a many-to-many tab, a user's assignments a one-to-many tab; nothing
+hand-written), `useMyPermissions()`/`hasPermission()` to hide what a user
+can't open (apps/main's sidebar). `fetchMyPermissions` sends the
+session's token explicitly: after a reload `initSession` restores the
+session before `apiRequest`'s own token store, and `apiRequest`'s 401
+handling would otherwise redirect to the standalone app's `/login`.
+
 ## Frontend (`frontend/`)
 
 React + Vite + TypeScript, and also an **npm package**: `package.json`
@@ -123,7 +186,11 @@ and redirect to `?next=` (same-origin paths only, else `/` - see
 `src/routes/redirect.ts`, which blocks `//host`-style open redirects);
 the host steers the destination by putting `?next=` on its links. Add a
 new auth page (forgot-password, etc.) with a file under `src/routes/` +
-an entry in `createAuthRoutes()`; the host needs no change. Notes:
+an entry in `createAuthRoutes()`; the host needs no change. A host
+customizes those pages (it can't pass them props) by wrapping its app in
+`AuthScreenProvider` (`title` = the heading above the card; `apps/main`'s
+`root.tsx` sets "GoalNexa"); `LoginScreen`/`SignupScreen` also take
+`title` directly. Notes:
 - `src/routes/*.tsx` are the only files here allowed to import
   `react-router` (`useNavigate`/`useSearchParams`); in the host,
   `resolve.dedupe` resolves it to the host's copy (v8). This package

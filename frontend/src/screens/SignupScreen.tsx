@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Signup from "../pages/Signup";
 import type { Session } from "../lib/api/auth";
@@ -8,7 +8,7 @@ import type { Session } from "../lib/api/auth";
  * contained on purpose, same shape as LoginScreen: bundles its own
  * AuthProvider, no react-router dependency (see Signup's own docstring).
  */
-function SignupScreenInner({ onSuccess }: { onSuccess?: (session: Session) => void }) {
+function SignupScreenInner({ onSuccess, title }: SignupScreenProps) {
   const { user } = useAuth();
   const [justSignedUp, setJustSignedUp] = useState(false);
 
@@ -22,6 +22,7 @@ function SignupScreenInner({ onSuccess }: { onSuccess?: (session: Session) => vo
 
   return (
     <Signup
+      title={title}
       onSuccess={(session) => {
         setJustSignedUp(true);
         onSuccess?.(session);
@@ -30,7 +31,13 @@ function SignupScreenInner({ onSuccess }: { onSuccess?: (session: Session) => vo
   );
 }
 
-export default function SignupScreen(props: { onSuccess?: (session: Session) => void }) {
+export interface SignupScreenProps {
+  onSuccess?: (session: Session) => void;
+  /** The heading above the card; overrides `AuthScreenProvider`'s. @default "platform-auth" */
+  title?: ReactNode;
+}
+
+export default function SignupScreen(props: SignupScreenProps) {
   return (
     <AuthProvider>
       <SignupScreenInner {...props} />
