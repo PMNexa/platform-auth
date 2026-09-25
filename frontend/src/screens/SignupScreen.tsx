@@ -8,7 +8,7 @@ import type { Session } from "../lib/api/auth";
  * contained on purpose, same shape as LoginScreen: bundles its own
  * AuthProvider, no react-router dependency (see Signup's own docstring).
  */
-function SignupScreenInner({ onSuccess, title, setup }: SignupScreenProps) {
+function SignupScreenInner({ onSuccess, title, setup, footer, defaultEmail }: SignupScreenProps) {
   const { user } = useAuth();
   const [justSignedUp, setJustSignedUp] = useState(false);
 
@@ -24,6 +24,8 @@ function SignupScreenInner({ onSuccess, title, setup }: SignupScreenProps) {
     <Signup
       title={title}
       setup={setup}
+      defaultEmail={defaultEmail}
+      footer={footer}
       onSuccess={(session) => {
         setJustSignedUp(true);
         onSuccess?.(session);
@@ -38,6 +40,10 @@ export interface SignupScreenProps {
   title?: ReactNode;
   /** First-run onboarding: create the first account as the admin instead. */
   setup?: boolean;
+  /** Below the card - e.g. a link to the other auth page (the host routes it). */
+  footer?: ReactNode;
+  /** Prefills the email field - e.g. from an invitation (`?email=`). */
+  defaultEmail?: string;
 }
 
 export default function SignupScreen(props: SignupScreenProps) {

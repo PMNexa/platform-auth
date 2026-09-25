@@ -211,7 +211,11 @@ under a host-chosen mount - `apps/main` registers the whole module with
 success, the route files store the session in this module's own store
 and redirect to `?next=` (same-origin paths only, else `/` - see
 `src/routes/redirect.ts`, which blocks `//host`-style open redirects);
-the host steers the destination by putting `?next=` on its links. Add a
+the host steers the destination by putting `?next=` on its links. Login
+and signup link to each other under the card (the screens' `footer`
+prop), keeping the query (`siblingPath`) - so an invited user without an
+account signs up and still lands back on the invitation. Signup also
+prefills the email from `?email=` (`defaultEmail`). Add a
 new auth page (forgot-password, etc.) with a file under `src/routes/` +
 an entry in `createAuthRoutes()`; the host needs no change. A host
 customizes those pages (it can't pass them props) by wrapping its app in

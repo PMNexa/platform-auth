@@ -1,8 +1,8 @@
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useAuthScreenConfig } from "../screens/AuthScreenConfig";
 import LoginScreen from "../screens/LoginScreen";
 import { setSession } from "../session";
-import { nextPath } from "./redirect";
+import { nextPath, siblingPath } from "./redirect";
 import { useSetupGate } from "./useSetupGate";
 
 /**
@@ -21,11 +21,17 @@ export function meta() {
 export default function LoginRoute() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
+  const location = useLocation();
   const { title } = useAuthScreenConfig();
   if (!useSetupGate("login")) return null;
   return (
     <LoginScreen
       title={title}
+      footer={
+        <>
+          No account yet? <Link to={siblingPath(location, "signup")}>Sign up</Link>
+        </>
+      }
       onSuccess={(session) => {
         setSession(session);
         navigate(nextPath(search), { replace: true });

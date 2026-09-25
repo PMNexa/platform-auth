@@ -19,11 +19,15 @@ export interface SignupProps {
   onSuccess: (session: Session) => void;
   /** The heading above the card - e.g. the host app's name or logo. @default "platform-auth" */
   title?: ReactNode;
+  /** Below the card - e.g. a link to the other auth page (the host routes it). */
+  footer?: ReactNode;
+  /** Prefills the email field - e.g. from an invitation (`?email=`). */
+  defaultEmail?: string;
   /** First-run onboarding: creates the first account as the admin (`/setup`) instead of signing up. */
   setup?: boolean;
 }
 
-function Signup({ onSuccess, title = "platform-auth", setup = false }: SignupProps) {
+function Signup({ onSuccess, title = "platform-auth", setup = false, footer, defaultEmail }: SignupProps) {
   const auth = useAuth();
   const signup = setup ? auth.setup : auth.signup;
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false }: SignupPro
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignupFormValues>({ resolver: zodResolver(signupSchema) });
+  } = useForm<SignupFormValues>({ resolver: zodResolver(signupSchema), defaultValues: { email: defaultEmail ?? "" } });
 
   async function onSubmit(values: SignupFormValues) {
     setError(null);
@@ -109,6 +113,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false }: SignupPro
                 </form>
               </div>
             </div>
+            {footer && <div className="text-center text-secondary mt-3">{footer}</div>}
           </div>
         </div>
       </div>

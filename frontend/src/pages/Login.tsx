@@ -26,9 +26,11 @@ export interface LoginProps {
   onSuccess: (session: Session) => void;
   /** The heading above the card - e.g. the host app's name or logo. @default "platform-auth" */
   title?: ReactNode;
+  /** Below the card - e.g. a link to the other auth page (the host routes it). */
+  footer?: ReactNode;
 }
 
-function Login({ onSuccess, title = "platform-auth" }: LoginProps) {
+function Login({ onSuccess, title = "platform-auth", footer }: LoginProps) {
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -93,6 +95,7 @@ function Login({ onSuccess, title = "platform-auth" }: LoginProps) {
                 </form>
               </div>
             </div>
+            {footer && <div className="text-center text-secondary mt-3">{footer}</div>}
           </div>
         </div>
       </div>
