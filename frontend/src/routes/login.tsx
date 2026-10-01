@@ -32,6 +32,7 @@ export default function LoginRoute() {
           No account yet? <Link to={siblingPath(location, "signup")}>Sign up</Link>
         </>
       }
+      forgotPassword={<Link to={siblingPath({ ...location, search: "" }, "forgot")}>Forgot password?</Link>}
       onSuccess={(session) => {
         setSession(session);
         navigate(nextPath(search), { replace: true });

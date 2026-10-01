@@ -26,7 +26,7 @@ export type { AuthScreenConfig } from "./screens/AuthScreenConfig";
 // `getSession()`.
 export type { Session } from "./lib/api/auth";
 
-export { createAuthRoutes } from "./authRoutes";
+export { createAccountRoutes, createAuthRoutes } from "./authRoutes";
 
 // RBAC: its CRUD screens (users/roles/role assignments/permissions) and
 // the signed-in user's permissions, for hiding what they can't open.
@@ -38,11 +38,20 @@ export type { AuthRouteConfigEntry } from "./authRoutes";
 
 export {
   clearSession,
+  endImpersonation,
   getSession,
   initSession,
+  isImpersonating,
   isSessionInitialized,
   logout,
   refreshSession,
   setSession,
   subscribeSession,
 } from "./session";
+
+// Account administration and the email-link screens.
+export { default as UserAdminPanel } from "./screens/UserAdminPanel";
+export type { UserAdminPanelProps } from "./screens/UserAdminPanel";
+export { default as InviteUserCard } from "./screens/InviteUserCard";
+export { ForgotPasswordScreen, ResetPasswordScreen, VerifyEmailScreen } from "./screens/AccountScreens";
+export { default as MyAccountScreen } from "./screens/MyAccountScreen";

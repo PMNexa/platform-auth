@@ -15,10 +15,12 @@ admin comes from `manage.py grant_role <email> Admin`.
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core_api.errors import ConflictError
+from core_api.system import audit
 from platform_auth.models import Role, RoleAssignment, User
 from platform_auth.rbac.catalog import sync_catalog
 from platform_auth.rbac.settings import admin_role_name
@@ -65,9 +67,11 @@ class SetupView(APIView):
                     name=data["name"],
                     email=data["email"].lower(),
                     password_hash=hash_password(data["password"]),
+                    email_verified_at=timezone.now(),
                 )
             except IntegrityError as exc:
                 raise ConflictError("email_taken", "An account with this email already exists.") from exc
             RoleAssignment.objects.get_or_create(user=user, role=role, scope_id=None)
 
-        return issue_session_response(user)
+        audit("auth.setup", request=request, actor=user, target=user)
+        return issue_session_response(user, request)

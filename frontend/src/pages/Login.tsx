@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api/client";
 import type { Session } from "../lib/api/auth";
+import { CheckEmailNotice } from "../screens/AccountScreens";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Email is required."),
@@ -28,11 +29,15 @@ export interface LoginProps {
   title?: ReactNode;
   /** Below the card - e.g. a link to the other auth page (the host routes it). */
   footer?: ReactNode;
+  /** Under the password field - a "Forgot password?" link (the host routes it). */
+  forgotPassword?: ReactNode;
 }
 
-function Login({ onSuccess, title = "platform-auth", footer }: LoginProps) {
+function Login({ onSuccess, title = "platform-auth", footer, forgotPassword }: LoginProps) {
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  // Set when the account exists but its email isn't confirmed yet - offers a new link.
+  const [unverified, setUnverified] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -43,12 +48,15 @@ function Login({ onSuccess, title = "platform-auth", footer }: LoginProps) {
 
   async function onSubmit(values: LoginFormValues) {
     setError(null);
+    setUnverified(null);
     setSubmitting(true);
     try {
       const session = await login(values.email, values.password);
       onSuccess(session);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      const code = err instanceof ApiError ? (err.body as { code?: string } | undefined)?.code : undefined;
+      if (code === "email_unverified") setUnverified(values.email);
     } finally {
       setSubmitting(false);
     }
@@ -85,8 +93,14 @@ function Login({ onSuccess, title = "platform-auth", footer }: LoginProps) {
                       {...register("password")}
                     />
                     {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
+                    {forgotPassword && <div className="mt-1 small">{forgotPassword}</div>}
                   </div>
                   {error && <div className="alert alert-danger" role="alert">{error}</div>}
+                  {unverified && (
+                    <div className="mb-3">
+                      <CheckEmailNotice email={unverified} />
+                    </div>
+                  )}
                   <div className="d-grid gap-2">
                     <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
                       {submitting ? "Signing in..." : "Sign In"}

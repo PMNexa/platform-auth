@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
+import { VerificationPendingError } from "../auth/errors";
+import { CheckEmailNotice } from "../screens/AccountScreens";
 import { ApiError } from "../lib/api/client";
 import type { Session } from "../lib/api/auth";
 
@@ -32,6 +34,8 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
   const signup = setup ? auth.setup : auth.signup;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // The account was created, but its email must be confirmed first.
+  const [pending, setPending] = useState<string | null>(null);
 
   const {
     register,
@@ -46,6 +50,10 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
       const session = await signup(values.name, values.email, values.password);
       onSuccess(session);
     } catch (err) {
+      if (err instanceof VerificationPendingError) {
+        setPending(err.email);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
@@ -70,6 +78,9 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
                 ) : (
                   <p className="text-center mb-3">Create your account</p>
                 )}
+                {pending ? (
+                  <CheckEmailNotice email={pending} />
+                ) : (
                 <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="name">Name</label>
@@ -111,6 +122,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
                     </button>
                   </div>
                 </form>
+                )}
               </div>
             </div>
             {footer && <div className="text-center text-secondary mt-3">{footer}</div>}

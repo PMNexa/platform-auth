@@ -12,6 +12,9 @@ class RefreshToken(TimestampedModel):
     expires_at = models.DateTimeField()
     revoked_at = models.DateTimeField(null=True, blank=True)
     revoked_reason = models.CharField(max_length=64, null=True, blank=True)
+    # Where the session was started from - shown on the admin's session list.
+    ip = models.CharField(max_length=64, blank=True, default="", db_default="")
+    user_agent = models.CharField(max_length=255, blank=True, default="", db_default="")
 
     class Meta:
         db_table = "refresh_token"

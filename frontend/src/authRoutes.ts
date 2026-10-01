@@ -1,6 +1,7 @@
 /**
  * platform-auth's OWN route list - every auth page this module has
- * (`login`, `signup`, first-run `setup`), nested under a HOST-chosen mount. A host
+ * (`login`, `signup`, first-run `setup`, and the email-link pages
+ * `forgot`, `reset`, `verify`), nested under a HOST-chosen mount. A host
  * registers the whole module ONCE:
  * ```ts
  * // apps/main/frontend/app/routes.ts
@@ -51,5 +52,20 @@ export function createAuthRoutes(basePath: string): AuthRouteConfigEntry[] {
     { id: "platform-auth-login", path: `${base}/login`, file: routeFile("login.tsx") },
     { id: "platform-auth-signup", path: `${base}/signup`, file: routeFile("signup.tsx") },
     { id: "platform-auth-setup", path: `${base}/setup`, file: routeFile("setup.tsx") },
+    // Email links: forgot password, set a new one (reset/invitation), confirm an email.
+    { id: "platform-auth-forgot", path: `${base}/forgot`, file: routeFile("forgot.tsx") },
+    { id: "platform-auth-reset", path: `${base}/reset`, file: routeFile("reset.tsx") },
+    { id: "platform-auth-verify", path: `${base}/verify`, file: routeFile("verify.tsx") },
+    // An admin's read-only "view as" tab.
+    { id: "platform-auth-view-as", path: `${base}/view-as`, file: routeFile("view-as.tsx") },
   ];
+}
+
+/**
+ * The signed-in user's own account page (download my data, delete my
+ * account) at a host-chosen path - mount it INSIDE the host's signed-in
+ * layout: `...createAccountRoutes("account")`.
+ */
+export function createAccountRoutes(basePath: string): AuthRouteConfigEntry[] {
+  return [{ id: "platform-auth-account", path: basePath.replace(/^\/+|\/+$/g, ""), file: routeFile("account.tsx") }];
 }

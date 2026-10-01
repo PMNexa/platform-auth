@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createCrudRoutes, isNavGroup, prefixRoutes, type NavEntry, type NavItem, type RouteEntry } from "platform-core";
+import { createCrudRoutes, isNavGroup, prefixRoutes, routeFilePath, type NavEntry, type NavItem, type RouteEntry } from "platform-core";
 import { apiRequest } from "./lib/api/client";
 import { getSession, subscribeSession } from "./session";
 
@@ -13,7 +13,11 @@ import { getSession, subscribeSession } from "./session";
  */
 export function createRbacRoutes(basePath: string): RouteEntry[] {
   return prefixRoutes(basePath, [
-    ...createCrudRoutes("/api/v1/users"),
+    // Users: "Invite user" on the list, the admin's account actions on a user's page.
+    ...createCrudRoutes("/api/v1/users", {
+      listFile: routeFilePath(import.meta.url, "routes/user-list.tsx"),
+      detailFile: routeFilePath(import.meta.url, "routes/user-detail.tsx"),
+    }),
     ...createCrudRoutes("/api/v1/roles"),
     ...createCrudRoutes("/api/v1/role-assignments"),
     ...createCrudRoutes("/api/v1/permissions"),

@@ -60,6 +60,8 @@ class UserAccountSerializer(BaseSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "name", "email", "created_at", "role_assignments"]
+        fields = ["id", "name", "email", "is_active", "email_verified_at", "last_login_at", "created_at", "role_assignments"]
         deferred_fields = ["role_assignments"]
-        read_only_fields = ["email", "created_at"]
+        # Status changes go through the user's actions (disable/enable...),
+        # which guard the last admin and end sessions - not a plain PATCH.
+        read_only_fields = ["email", "is_active", "email_verified_at", "last_login_at", "created_at"]

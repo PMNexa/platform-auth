@@ -12,6 +12,7 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core_api.system import audit
 from platform_auth.models import RefreshToken
 from platform_auth.security import hash_refresh_token
 
@@ -22,6 +23,9 @@ class LogoutView(APIView):
     def post(self, request):
         raw_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
         if raw_token:
+            token = RefreshToken.objects.filter(token_hash=hash_refresh_token(raw_token)).select_related("user").first()
+            if token is not None:
+                audit("auth.logout", request=request, actor=token.user, target=token.user)
             RefreshToken.objects.filter(token_hash=hash_refresh_token(raw_token), revoked_at__isnull=True).update(
                 revoked_at=datetime.now(UTC), revoked_reason="logout"
             )

@@ -13,11 +13,21 @@ from platform_auth.security import create_access_token, create_refresh_token, ha
 from platform_auth.serializers import UserSerializer
 
 
-def issue_session_response(user: User) -> Response:
+def _client_ip(request) -> str:
+    from rest_framework.throttling import BaseThrottle
+
+    try:
+        return BaseThrottle().get_ident(request) or ""
+    except Exception:
+        return ""
+
+
+def issue_session_response(user: User, request=None) -> Response:
     """Every refresh token - from login/signup or a rotation (see
     views/refresh.py) - gets a fresh `JWT_REFRESH_TTL_DAYS` window: a
     sliding expiry, so a session lasts until logout as long as it's used
-    at least once per window. Only an idle session expires.
+    at least once per window. Only an idle session expires. `request`
+    (when given) records where the session came from.
     """
     access_token = create_access_token(str(user.id))
 
@@ -29,6 +39,8 @@ def issue_session_response(user: User) -> Response:
         token_hash=hash_refresh_token(raw_refresh_token),
         issued_at=now,
         expires_at=expires_at,
+        ip=_client_ip(request) if request is not None else "",
+        user_agent=(request.META.get("HTTP_USER_AGENT", "")[:255] if request is not None else ""),
     )
 
     response = Response(
@@ -49,3 +61,12 @@ def issue_session_response(user: User) -> Response:
         path=f"{settings.URL_PREFIX}/api/v1/auth",
     )
     return response
+
+
+def revoke_all_sessions(user: User, reason: str) -> int:
+    """Revokes every refresh token the user holds - their logins end at the
+    next refresh (an access token lives 15 minutes at most; a disabled
+    user's is refused right away by `ActorAuthentication`)."""
+    return RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
+        revoked_at=datetime.now(UTC), revoked_reason=reason
+    )

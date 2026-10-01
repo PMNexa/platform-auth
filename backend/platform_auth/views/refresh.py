@@ -27,6 +27,8 @@ class RefreshView(APIView):
         token = RefreshToken.objects.filter(token_hash=hash_refresh_token(raw_token)).first()
         if token is None or token.revoked_at is not None or token.expires_at <= datetime.now(UTC):
             raise Unauthorized()
+        if not token.user.is_active:
+            raise Unauthorized("This account is disabled.")
 
         # Atomic conditional update (compare-and-swap): only proceeds if
         # this exact row was still unrevoked the instant this ran. Two
@@ -40,4 +42,4 @@ class RefreshView(APIView):
         if rows_updated == 0:
             raise Unauthorized()
 
-        return issue_session_response(token.user)
+        return issue_session_response(token.user, request)

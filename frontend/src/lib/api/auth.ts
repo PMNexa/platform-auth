@@ -4,6 +4,8 @@ export interface UserSummary {
   id: string;
   name: string;
   email: string;
+  /** Set while an admin is viewing as this user ("view as", read-only). */
+  impersonated_by?: { id: string; name?: string; email?: string };
 }
 
 export interface LoginResponse {
@@ -27,8 +29,14 @@ export async function login(email: string, password: string): Promise<LoginRespo
   });
 }
 
-export async function signup(name: string, email: string, password: string): Promise<LoginResponse> {
-  return apiRequest<LoginResponse>("/api/v1/auth/signup", {
+/** Signup's answer when the instance requires email verification: no session yet - a link was emailed. */
+export interface VerificationPending {
+  verification_required: true;
+  email: string;
+}
+
+export async function signup(name: string, email: string, password: string): Promise<LoginResponse | VerificationPending> {
+  return apiRequest<LoginResponse | VerificationPending>("/api/v1/auth/signup", {
     method: "POST",
     withCredentials: true,
     skipAuthRedirect: true,
@@ -86,5 +94,55 @@ export async function logout(): Promise<void> {
     method: "POST",
     withCredentials: true,
     skipAuthRedirect: true,
+  });
+}
+
+/** Confirms the email from a signup link, and logs in. */
+export async function verifyEmail(token: string): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>("/api/v1/auth/verify-email", {
+    method: "POST",
+    withCredentials: true,
+    skipAuthRedirect: true,
+    data: { token },
+  });
+}
+
+/** Emails a new verification link (answers the same whether or not the account exists). */
+export async function resendVerification(email: string): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/resend-verification", { method: "POST", skipAuthRedirect: true, data: { email } });
+}
+
+/** Emails a password reset link (answers the same whether or not the account exists). */
+export async function forgotPassword(email: string): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/password/forgot", { method: "POST", skipAuthRedirect: true, data: { email } });
+}
+
+/** Sets a new password from a reset (or invitation) link, and logs in. */
+export async function resetPassword(token: string, password: string): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>("/api/v1/auth/password/reset", {
+    method: "POST",
+    withCredentials: true,
+    skipAuthRedirect: true,
+    data: { token, password },
+  });
+}
+
+/** The signed-in user's own data, as the JSON the browser downloads. */
+export async function exportMyData(accessToken: string): Promise<Blob> {
+  return apiRequest<Blob>("/api/v1/auth/me/export", {
+    responseType: "blob",
+    skipAuthRedirect: true,
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+/** Deletes the signed-in user's account and everything they own. */
+export async function deleteMyAccount(accessToken: string, password: string): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/me/delete", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    withCredentials: true,
+    skipAuthRedirect: true,
+    data: { password },
   });
 }

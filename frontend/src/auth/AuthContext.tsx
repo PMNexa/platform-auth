@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 import { login as loginRequest, setup as setupRequest, signup as signupRequest } from "../lib/api/auth";
 import type { Session, UserSummary } from "../lib/api/auth";
+import { VerificationPendingError } from "./errors";
 import { clearAccessToken, getAccessToken, setAccessToken as setStoredAccessToken, subscribe } from "../lib/auth/tokenStore";
 
 interface AuthContextValue {
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
     const response = await signupRequest(name, email, password);
+    if ("verification_required" in response) throw new VerificationPendingError(response.email);
     setStoredAccessToken(response.access_token);
     setUser(response.user);
     return { accessToken: response.access_token, user: response.user };

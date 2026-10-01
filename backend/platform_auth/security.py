@@ -29,13 +29,14 @@ def hash_password(password: str) -> str:
 
 
 def verify_password_or_dummy(password: str, password_hash: str | None) -> bool:
-    if password_hash is None:
+    # No account, or one without a password (UNUSABLE_PASSWORD): same cost, never a match.
+    if password_hash is None or password_hash == "!":
         _pwd_context.verify(password, _DUMMY_PASSWORD_HASH)
         return False
     return _pwd_context.verify(password, password_hash)
 
 
-def create_access_token(actor_id: str, expires_minutes: float | None = None) -> str:
+def create_access_token(actor_id: str, expires_minutes: float | None = None, **extra: Any) -> str:
     ttl_minutes = expires_minutes if expires_minutes is not None else settings.JWT_ACCESS_TTL_MINUTES
     now = datetime.now(UTC)
     claims: dict[str, Any] = {
@@ -43,6 +44,7 @@ def create_access_token(actor_id: str, expires_minutes: float | None = None) -> 
         "iat": now,
         "exp": now + timedelta(minutes=ttl_minutes),
         "type": "access",
+        **extra,
     }
     return jwt.encode(claims, settings.JWT_SECRET, algorithm="HS256")
 

@@ -1,4 +1,5 @@
-import { logout as logoutRequest, refresh } from "./lib/api/auth";
+import { logout as logoutRequest, me, refresh } from "./lib/api/auth";
+import { setAccessToken } from "./lib/auth/tokenStore";
 import type { Session } from "./lib/api/auth";
 import { ApiError } from "./lib/api/client";
 
@@ -74,6 +75,11 @@ export function subscribeSession(callback: () => void): () => void {
  * cleared even if the request fails - the user asked to be logged out.
  */
 export async function logout(): Promise<void> {
+  // Viewing as someone: leave the view - never revoke the admin's own cookie from here.
+  if (impersonating) {
+    endImpersonation();
+    return;
+  }
   try {
     await logoutRequest();
   } finally {
@@ -121,6 +127,12 @@ function replaceToken(next: Session): void {
 
 async function refreshIfExpiring(): Promise<void> {
   if (!session || refreshDueAt === null || Date.now() < refreshDueAt) return;
+  // A "view as" token can't be refreshed (the cookie is the admin's own) -
+  // when it runs out, the view ends.
+  if (impersonating) {
+    if (Date.now() >= refreshDueAt + REFRESH_AHEAD_MS) endImpersonation();
+    return;
+  }
   try {
     replaceToken(await refreshSession());
   } catch (error) {
@@ -176,6 +188,15 @@ export async function refreshSession(): Promise<Session> {
  */
 export async function initSession(): Promise<void> {
   if (initialized) return;
+  const viewAs = storedImpersonation();
+  if (viewAs) {
+    try {
+      await applyImpersonationToken(viewAs);
+      return;
+    } catch {
+      clearStoredImpersonation(); // expired or revoked - fall back to the real session
+    }
+  }
   try {
     setSession(await refreshSession());
   } catch {
@@ -184,4 +205,59 @@ export async function initSession(): Promise<void> {
     initialized = true;
     notify();
   }
+}
+
+
+// --- "view as" (an admin's read-only impersonation) -----------------------
+//
+// The admin's user page opens `/<auth>/view-as#<token>` in a new tab; that
+// tab holds the read-only token in sessionStorage (this tab only, gone when
+// it closes) and never refreshes it - the refresh cookie is the admin's
+// own. Every write is refused by the backend. Ending the view (or the
+// token running out after 15 minutes) reloads into the admin's own session.
+const IMPERSONATION_KEY = "platform-auth:view-as";
+let impersonating = false;
+
+function storedImpersonation(): string | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage.getItem(IMPERSONATION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredImpersonation(): void {
+  try {
+    window.sessionStorage.removeItem(IMPERSONATION_KEY);
+  } catch {
+    // Nothing stored.
+  }
+}
+
+async function applyImpersonationToken(token: string): Promise<void> {
+  setAccessToken(token);
+  const user = await me();
+  impersonating = true;
+  setSession({ accessToken: token, user });
+}
+
+/** Starts viewing as a user with an admin-issued read-only token (`POST users/<id>/impersonate`). */
+export async function startImpersonation(token: string): Promise<void> {
+  try {
+    window.sessionStorage.setItem(IMPERSONATION_KEY, token);
+  } catch {
+    // Not persisted - the view lasts until a reload.
+  }
+  await applyImpersonationToken(token);
+}
+
+export function isImpersonating(): boolean {
+  return impersonating;
+}
+
+/** Ends "view as": back to the admin's own session (restored from the refresh cookie on reload). */
+export function endImpersonation(): void {
+  clearStoredImpersonation();
+  impersonating = false;
+  window.location.assign("/");
 }

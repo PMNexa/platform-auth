@@ -11,7 +11,7 @@ import type { Session } from "../lib/api/auth";
  * consuming app owns all routing/paths itself (see Login's own
  * docstring); this is a screen, not a router.
  */
-function LoginScreenInner({ onSuccess, title, footer }: LoginScreenProps) {
+function LoginScreenInner({ onSuccess, title, footer, forgotPassword }: LoginScreenProps) {
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -27,6 +27,7 @@ function LoginScreenInner({ onSuccess, title, footer }: LoginScreenProps) {
     <Login
       title={title}
       footer={footer}
+      forgotPassword={forgotPassword}
       onSuccess={(session) => {
         setJustLoggedIn(true);
         onSuccess?.(session);
@@ -41,6 +42,8 @@ export interface LoginScreenProps {
   title?: ReactNode;
   /** Below the card - e.g. a link to the other auth page (the host routes it). */
   footer?: ReactNode;
+  /** Under the password field - a "Forgot password?" link (the host routes it). */
+  forgotPassword?: ReactNode;
 }
 
 export default function LoginScreen(props: LoginScreenProps) {
