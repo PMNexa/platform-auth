@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { ApiError } from "../lib/api/client";
 import { forgotPassword, resendVerification, resetPassword, verifyEmail, type Session } from "../lib/api/auth";
 import { setAccessToken } from "../lib/auth/tokenStore";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import AuthCard from "../pages/AuthCard";
 
 /**
@@ -17,7 +18,10 @@ interface CommonProps {
 }
 
 function message(thrown: unknown): string {
-  return thrown instanceof ApiError ? thrown.message : "Something went wrong. Please try again.";
+  if (!(thrown instanceof ApiError)) return "Something went wrong. Please try again.";
+  // A refused password comes back per field (`password`).
+  const fields = (thrown.body as { field_errors?: Record<string, string[]> | null } | undefined)?.field_errors;
+  return fields ? Object.values(fields).flat().join(" ") : thrown.message;
 }
 
 function toSession(response: { access_token: string; user: Session["user"] }): Session {
@@ -87,10 +91,11 @@ export function ResetPasswordScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mismatch = confirm !== "" && confirm !== password;
+  const minLength = useAuthConfig()?.password_min_length ?? 8;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (password.length < 8 || mismatch) return;
+    if (password.length < minLength || mismatch) return;
     setBusy(true);
     setError(null);
     try {
@@ -114,7 +119,7 @@ export function ResetPasswordScreen({
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        <small className="form-hint mb-3">At least 8 characters.</small>
+        <small className="form-hint mb-3">At least {minLength} characters.</small>
         <label className="form-label" htmlFor="reset-confirm">Repeat it</label>
         <input
           id="reset-confirm"
@@ -127,7 +132,7 @@ export function ResetPasswordScreen({
         {mismatch && <div className="invalid-feedback d-block mb-2">The passwords don't match.</div>}
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         <div className="d-grid">
-          <button type="submit" className="btn btn-primary btn-sm" disabled={busy || password.length < 8 || confirm !== password}>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={busy || password.length < minLength || confirm !== password}>
             {busy ? "Saving..." : "Save password and sign in"}
           </button>
         </div>
@@ -166,7 +171,7 @@ export function VerifyEmailScreen({
 }
 
 /** After a signup that needs confirming: where the link went, and a way to send another. */
-export function CheckEmailNotice({ email }: { email: string }) {
+export function CheckEmailNotice({ email, next }: { email: string; next?: string }) {
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   return (
     <div>
@@ -179,7 +184,7 @@ export function CheckEmailNotice({ email }: { email: string }) {
         disabled={state !== "idle"}
         onClick={() => {
           setState("sending");
-          void resendVerification(email).finally(() => setState("sent"));
+          void resendVerification(email, next).finally(() => setState("sent"));
         }}
       >
         {state === "sent" ? "Sent again" : "Send it again"}

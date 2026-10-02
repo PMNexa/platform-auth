@@ -9,7 +9,8 @@ interface AuthContextValue {
   accessToken: string | null;
   user: UserSummary | null;
   login: (email: string, password: string) => Promise<Session>;
-  signup: (name: string, email: string, password: string) => Promise<Session>;
+  /** `origin`: where the signup page is heading and who sent the visitor - see `lib/api/auth`'s `signup`. */
+  signup: (name: string, email: string, password: string, origin?: { next?: string; ref?: string }) => Promise<Session>;
   /** First-run onboarding - creates the first account as the admin. */
   setup: (name: string, email: string, password: string) => Promise<Session>;
   logout: () => void;
@@ -30,13 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { accessToken: response.access_token, user: response.user };
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, password: string) => {
-    const response = await signupRequest(name, email, password);
+  const signup = useCallback(
+    async (name: string, email: string, password: string, origin?: { next?: string; ref?: string }) => {
+    const response = await signupRequest(name, email, password, origin);
     if ("verification_required" in response) throw new VerificationPendingError(response.email);
     setStoredAccessToken(response.access_token);
     setUser(response.user);
     return { accessToken: response.access_token, user: response.user };
-  }, []);
+    },
+    [],
+  );
 
   const setup = useCallback(async (name: string, email: string, password: string) => {
     const response = await setupRequest(name, email, password);

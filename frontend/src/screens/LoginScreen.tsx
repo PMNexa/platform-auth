@@ -11,7 +11,7 @@ import type { Session } from "../lib/api/auth";
  * consuming app owns all routing/paths itself (see Login's own
  * docstring); this is a screen, not a router.
  */
-function LoginScreenInner({ onSuccess, title, footer, forgotPassword }: LoginScreenProps) {
+function LoginScreenInner({ onSuccess, title, footer, forgotPassword, next, ssoError }: LoginScreenProps) {
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -28,6 +28,8 @@ function LoginScreenInner({ onSuccess, title, footer, forgotPassword }: LoginScr
       title={title}
       footer={footer}
       forgotPassword={forgotPassword}
+      next={next}
+      ssoError={ssoError}
       onSuccess={(session) => {
         setJustLoggedIn(true);
         onSuccess?.(session);
@@ -44,6 +46,10 @@ export interface LoginScreenProps {
   footer?: ReactNode;
   /** Under the password field - a "Forgot password?" link (the host routes it). */
   forgotPassword?: ReactNode;
+  /** Where single sign-on returns to afterwards (a same-origin path). */
+  next?: string;
+  /** Why a single sign-on attempt came back here (`?sso_error=`). */
+  ssoError?: string | null;
 }
 
 export default function LoginScreen(props: LoginScreenProps) {

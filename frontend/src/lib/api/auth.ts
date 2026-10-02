@@ -35,13 +35,42 @@ export interface VerificationPending {
   email: string;
 }
 
-export async function signup(name: string, email: string, password: string): Promise<LoginResponse | VerificationPending> {
+/**
+ * `origin.next`: where the signup page is heading (its `?next=`) - the
+ * confirmation email's link lands there. `origin.ref`: the page's `?ref=`.
+ */
+export async function signup(
+  name: string,
+  email: string,
+  password: string,
+  origin: { next?: string; ref?: string } = {},
+): Promise<LoginResponse | VerificationPending> {
   return apiRequest<LoginResponse | VerificationPending>("/api/v1/auth/signup", {
     method: "POST",
     withCredentials: true,
     skipAuthRedirect: true,
-    data: { name, email, password },
+    data: { name, email, password, ...origin },
   });
+}
+
+/** The instance's public auth settings - what the auth pages need before anyone is signed in. */
+export interface AuthConfig {
+  /** False: single sign-on is the only way in - no password form, no signup form. */
+  password_login: boolean;
+  password_min_length: number;
+  /** Set when a single sign-on provider is configured: its button's label and where the button goes. */
+  sso: { label: string; start_url: string } | null;
+}
+
+let configPromise: Promise<AuthConfig> | null = null;
+
+/** One request per page load, shared by every screen that asks. */
+export function authConfig(): Promise<AuthConfig> {
+  configPromise ??= apiRequest<AuthConfig>("/api/v1/auth/config", { skipAuthRedirect: true }).catch((error: unknown) => {
+    configPromise = null;
+    throw error;
+  });
+  return configPromise;
 }
 
 /** First-run onboarding: `required` until the first account exists. */
@@ -108,8 +137,12 @@ export async function verifyEmail(token: string): Promise<LoginResponse> {
 }
 
 /** Emails a new verification link (answers the same whether or not the account exists). */
-export async function resendVerification(email: string): Promise<void> {
-  await apiRequest<void>("/api/v1/auth/resend-verification", { method: "POST", skipAuthRedirect: true, data: { email } });
+export async function resendVerification(email: string, next?: string): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/resend-verification", {
+    method: "POST",
+    skipAuthRedirect: true,
+    data: { email, ...(next ? { next } : {}) },
+  });
 }
 
 /** Emails a password reset link (answers the same whether or not the account exists). */

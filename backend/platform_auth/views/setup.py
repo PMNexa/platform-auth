@@ -22,6 +22,7 @@ from rest_framework.views import APIView
 from core_api.errors import ConflictError
 from core_api.system import audit
 from platform_auth.models import Role, RoleAssignment, User
+from platform_auth.passwords import check_password
 from platform_auth.rbac.catalog import sync_catalog
 from platform_auth.rbac.settings import admin_role_name
 from platform_auth.security import hash_password
@@ -51,6 +52,7 @@ class SetupView(APIView):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        check_password(data["password"], email=data["email"])
 
         with transaction.atomic():
             sync_catalog()

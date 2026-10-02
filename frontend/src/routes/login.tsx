@@ -33,6 +33,8 @@ export default function LoginRoute() {
         </>
       }
       forgotPassword={<Link to={siblingPath({ ...location, search: "" }, "forgot")}>Forgot password?</Link>}
+      next={nextPath(search)}
+      ssoError={search.get("sso_error")}
       onSuccess={(session) => {
         setSession(session);
         navigate(nextPath(search), { replace: true });

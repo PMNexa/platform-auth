@@ -40,7 +40,7 @@ function message(thrown: unknown): string {
 
 /**
  * An admin's actions on one account, under the user's page: status
- * (active / disabled, email confirmed, last login), disable / enable, a
+ * (active / disabled / locked, email confirmed, last login), disable / enable, unlock, a
  * password link to hand over, every place they're signed in (logins, MCP
  * tokens, connected AI apps) with "sign out everywhere", and deleting the
  * account - handing what they own to another user, or erasing it. The
@@ -58,6 +58,8 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Read once: a lock that runs out while the page is open shows after the next action.
+  const [openedAt] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +100,7 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
     );
   }
 
+  const locked = user.locked_until !== null && new Date(user.locked_until).getTime() > openedAt;
   const otherCount = sessions?.other.reduce((sum, group) => sum + group.items.length, 0) ?? 0;
 
   return (
@@ -109,6 +112,11 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
             {user.is_active ? "Active" : "Disabled"}
           </span>
           {!user.email_verified_at && <span className="badge bg-yellow-lt ms-2">Email not confirmed</span>}
+          {locked && (
+            <span className="badge bg-orange-lt ms-2" title="Too many wrong passwords in a row">
+              Locked until {when(user.locked_until)}
+            </span>
+          )}
         </CardHeader>
         <CardBody>
           <div className="row mb-3">
@@ -133,6 +141,11 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
             ) : (
               <Button variant="success" outline disabled={busy} onClick={() => void run(() => api.enable(userId), "Enabled.")}>
                 Enable account
+              </Button>
+            )}
+            {locked && (
+              <Button variant="warning" outline disabled={busy} onClick={() => void run(() => api.unlock(userId), "Unlocked - they can log in again.")}>
+                Unlock
               </Button>
             )}
             <Button

@@ -26,7 +26,17 @@ from platform_auth.models import RoleAssignment, User
 from platform_auth.tokens import RESET, VERIFY, make_token
 
 OPEN, INVITE_ONLY, CLOSED = "open", "invite_only", "closed"
-DEFAULT_PAGES = {"verify": "/auth/verify", "reset": "/auth/reset", "login": "/auth/login"}
+DEFAULT_PAGES = {"verify": "/auth/verify", "reset": "/auth/reset", "login": "/auth/login", "sso": "/auth/sso"}
+
+
+def password_login_required() -> None:
+    """Refuses a password-based way in while the instance is single sign-on only (`sso.py`)."""
+    from core_api.errors import ApiError
+    from platform_auth import sso
+
+    if not sso.password_login_enabled():
+        raise ApiError(403, "password_login_disabled",
+                       f"Password login is turned off here - sign in with {sso.label()} instead.")
 
 
 def verification_required() -> bool:
@@ -59,8 +69,22 @@ def _greeting(user: User) -> str:
     return f"Hi {user.name.split(' ')[0]}," if user.name.strip() else "Hi,"
 
 
-def send_verification(request, user: User) -> None:
-    url = page_url(request, "verify", token=make_token(user, VERIFY))
+def safe_next(value) -> str:
+    """A `next` the client sent, if it's a path on this site (the same
+    rule as the frontend's `nextPath`) - else "". It rides in emailed
+    links, so it must never point anywhere else."""
+    value = value if isinstance(value, str) else ""
+    ok = value.startswith("/") and not value.startswith(("//", "/\\")) and len(value) <= 2000
+    return value if ok and value != "/" else ""
+
+
+def send_verification(request, user: User, next: str = "") -> None:
+    """`next`: where the signup was heading (an invitation, an AI client's
+    consent page) - the confirmation link lands there after signing in."""
+    params = {"token": make_token(user, VERIFY)}
+    if safe_next(next):
+        params["next"] = safe_next(next)
+    url = page_url(request, "verify", **params)
     send_email(
         user.email,
         "Confirm your email",

@@ -1,7 +1,8 @@
 /**
  * platform-auth's OWN route list - every auth page this module has
- * (`login`, `signup`, first-run `setup`, and the email-link pages
- * `forgot`, `reset`, `verify`), nested under a HOST-chosen mount. A host
+ * (`login`, `signup`, first-run `setup`, the email-link pages `forgot`,
+ * `reset`, `verify`, and single sign-on's landing page `sso`), nested
+ * under a HOST-chosen mount. A host
  * registers the whole module ONCE:
  * ```ts
  * // apps/main/frontend/app/routes.ts
@@ -56,6 +57,8 @@ export function createAuthRoutes(basePath: string): AuthRouteConfigEntry[] {
     { id: "platform-auth-forgot", path: `${base}/forgot`, file: routeFile("forgot.tsx") },
     { id: "platform-auth-reset", path: `${base}/reset`, file: routeFile("reset.tsx") },
     { id: "platform-auth-verify", path: `${base}/verify`, file: routeFile("verify.tsx") },
+    // Where single sign-on lands after the provider (the backend's `sso` page).
+    { id: "platform-auth-sso", path: `${base}/sso`, file: routeFile("sso.tsx") },
     // An admin's read-only "view as" tab.
     { id: "platform-auth-view-as", path: `${base}/view-as`, file: routeFile("view-as.tsx") },
   ];

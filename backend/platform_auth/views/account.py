@@ -25,8 +25,16 @@ from django.conf import settings
 
 from core_api.errors import ApiError
 from core_api.system import audit, export_user_data
-from platform_auth.accounts import is_last_admin, send_notice, send_password_reset, send_verification
+from platform_auth import sso
+from platform_auth.accounts import (
+    is_last_admin,
+    password_login_required,
+    send_notice,
+    send_password_reset,
+    send_verification,
+)
 from platform_auth.models import User
+from platform_auth.passwords import check_password
 from platform_auth.security import hash_password, verify_password_or_dummy
 from platform_auth.throttling import SignupRateThrottle
 from platform_auth.tokens import RESET, VERIFY, read_token
@@ -42,7 +50,7 @@ class _TokenSerializer(serializers.Serializer):
 
 
 class _ResetSerializer(_TokenSerializer):
-    password = serializers.CharField(trim_whitespace=False, min_length=8)
+    password = serializers.CharField(trim_whitespace=False)
 
 
 def _invalid_link():
@@ -54,6 +62,7 @@ class VerifyEmailView(APIView):
     throttle_classes = [SignupRateThrottle]
 
     def post(self, request):
+        password_login_required()
         serializer = _TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = read_token(serializer.validated_data["token"], VERIFY)
@@ -76,7 +85,7 @@ class ResendVerificationView(APIView):
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(email=serializer.validated_data["email"].lower(), is_active=True).first()
         if user is not None and user.email_verified_at is None:
-            send_verification(request, user)
+            send_verification(request, user, request.data.get("next", ""))
         return Response(status=204)
 
 
@@ -89,7 +98,8 @@ class ForgotPasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
         user = User.objects.filter(email=email, is_active=True).first()
-        if user is not None:
+        # Single sign-on only: no link (a reset would be refused), same answer.
+        if user is not None and sso.password_login_enabled():
             send_password_reset(request, user)
         audit("auth.password_reset_requested", request=request, actor=None, target_label=email, found=user is not None)
         return Response(status=204)
@@ -100,6 +110,8 @@ class ResetPasswordView(APIView):
     throttle_classes = [SignupRateThrottle]
 
     def post(self, request):
+        # A reset signs in - not a way around single sign-on.
+        password_login_required()
         serializer = _ResetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = read_token(serializer.validated_data["token"], RESET)
@@ -107,10 +119,14 @@ class ResetPasswordView(APIView):
             raise _invalid_link()
         if not user.is_active:
             raise ApiError(403, "account_disabled", "This account is disabled. Contact an administrator.")
+        check_password(serializer.validated_data["password"], email=user.email)
         user.password_hash = hash_password(serializer.validated_data["password"])
         user.email_verified_at = user.email_verified_at or timezone.now()
         user.last_login_at = timezone.now()
-        user.save(update_fields=["password_hash", "email_verified_at", "last_login_at", "updated_at"])
+        # The link proved who they are - it also ends a lock from wrong passwords.
+        user.failed_login_count, user.locked_until = 0, None
+        user.save(update_fields=["password_hash", "email_verified_at", "last_login_at", "failed_login_count",
+                                 "locked_until", "updated_at"])
         revoke_all_sessions(user, "password_reset")
         audit("auth.password_reset", request=request, actor=user, target=user)
         send_notice(user, "Your password was changed",
@@ -125,7 +141,7 @@ class _PasswordSerializer(serializers.Serializer):
 
 class _ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(trim_whitespace=False)
-    new_password = serializers.CharField(trim_whitespace=False, min_length=8)
+    new_password = serializers.CharField(trim_whitespace=False)
 
 
 class ChangeMyPasswordView(APIView):
@@ -143,6 +159,7 @@ class ChangeMyPasswordView(APIView):
         user = request.user
         if not verify_password_or_dummy(serializer.validated_data["current_password"], user.password_hash):
             raise ApiError(400, "wrong_password", "That's not your current password.")
+        check_password(serializer.validated_data["new_password"], email=user.email, field="new_password")
         user.password_hash = hash_password(serializer.validated_data["new_password"])
         user.save(update_fields=["password_hash", "updated_at"])
         revoke_all_sessions(user, "password_changed")

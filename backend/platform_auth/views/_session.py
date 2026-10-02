@@ -22,8 +22,9 @@ def _client_ip(request) -> str:
         return ""
 
 
-def issue_session_response(user: User, request=None) -> Response:
-    """Every refresh token - from login/signup or a rotation (see
+def start_session(user: User, request=None) -> tuple[str, str, int]:
+    """(access token, raw refresh token, the refresh cookie's max-age).
+    Every refresh token - from login/signup or a rotation (see
     views/refresh.py) - gets a fresh `JWT_REFRESH_TTL_DAYS` window: a
     sliding expiry, so a session lasts until logout as long as it's used
     at least once per window. Only an idle session expires. `request`
@@ -42,15 +43,10 @@ def issue_session_response(user: User, request=None) -> Response:
         ip=_client_ip(request) if request is not None else "",
         user_agent=(request.META.get("HTTP_USER_AGENT", "")[:255] if request is not None else ""),
     )
+    return access_token, raw_refresh_token, int((expires_at - now).total_seconds())
 
-    response = Response(
-        {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": UserSerializer(user).data,
-        }
-    )
-    max_age = int((expires_at - now).total_seconds())
+
+def set_refresh_cookie(response, raw_refresh_token: str, max_age: int) -> None:
     response.set_cookie(
         settings.REFRESH_COOKIE_NAME,
         raw_refresh_token,
@@ -60,6 +56,19 @@ def issue_session_response(user: User, request=None) -> Response:
         max_age=max_age,
         path=f"{settings.URL_PREFIX}/api/v1/auth",
     )
+
+
+def issue_session_response(user: User, request=None) -> Response:
+    """Login and signup's answer: the access token in the body, the refresh token in its cookie."""
+    access_token, raw_refresh_token, max_age = start_session(user, request)
+    response = Response(
+        {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserSerializer(user).data,
+        }
+    )
+    set_refresh_cookie(response, raw_refresh_token, max_age)
     return response
 
 

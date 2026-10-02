@@ -21,6 +21,7 @@ export default function SignupRoute() {
     <SignupScreen
       title={title}
       defaultEmail={search.get("email") ?? undefined}
+      next={nextPath(search)}
       footer={
         <>
           Already have an account? <Link to={siblingPath(location, "login")}>Log in</Link>

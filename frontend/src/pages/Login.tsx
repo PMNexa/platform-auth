@@ -5,7 +5,9 @@ import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api/client";
 import type { Session } from "../lib/api/auth";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { CheckEmailNotice } from "../screens/AccountScreens";
+import SsoButton, { ssoErrorMessage } from "../screens/SsoButton";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Email is required."),
@@ -31,11 +33,16 @@ export interface LoginProps {
   footer?: ReactNode;
   /** Under the password field - a "Forgot password?" link (the host routes it). */
   forgotPassword?: ReactNode;
+  /** Where single sign-on returns to afterwards (a same-origin path). */
+  next?: string;
+  /** Why a single sign-on attempt came back here (`?sso_error=`). */
+  ssoError?: string | null;
 }
 
-function Login({ onSuccess, title = "platform-auth", footer, forgotPassword }: LoginProps) {
+function Login({ onSuccess, title = "platform-auth", footer, forgotPassword, next, ssoError }: LoginProps) {
   const { login } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const config = useAuthConfig();
+  const [error, setError] = useState<string | null>(ssoErrorMessage(ssoError));
   // Set when the account exists but its email isn't confirmed yet - offers a new link.
   const [unverified, setUnverified] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +78,17 @@ function Login({ onSuccess, title = "platform-auth", footer, forgotPassword }: L
             <div className="card">
               <div className="card-body p-4">
                 <p className="text-center mb-3">Sign in to start your session</p>
-                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
+                {config?.sso && (
+                  <>
+                    <SsoButton sso={config.sso} next={next} primary={!config.password_login} />
+                    {config.password_login && <div className="hr-text my-3">or</div>}
+                  </>
+                )}
+                {config && !config.password_login && error && (
+                  <div className="alert alert-danger mt-3 mb-0" role="alert">{error}</div>
+                )}
+                {/* Hidden only once the server says single sign-on is the only way in. */}
+                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate hidden={config ? !config.password_login : false}>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="email">Email</label>
                     <input
@@ -98,7 +115,7 @@ function Login({ onSuccess, title = "platform-auth", footer, forgotPassword }: L
                   {error && <div className="alert alert-danger" role="alert">{error}</div>}
                   {unverified && (
                     <div className="mb-3">
-                      <CheckEmailNotice email={unverified} />
+                      <CheckEmailNotice email={unverified} next={next} />
                     </div>
                   )}
                   <div className="d-grid gap-2">

@@ -111,6 +111,19 @@ REFRESH_COOKIE_SECURE = os.environ.get("DJANGO_DEBUG", "true").lower() != "true"
 # (this module standalone, served at "/").
 URL_PREFIX = os.environ.get("URL_PREFIX", "")
 
+# --- Single sign-on (platform_auth/sso.py): one OpenID Connect provider.
+# All three set = "Sign in with ..." on the login page. The redirect URI
+# to register at the provider: <this app's address>/api/v1/auth/sso/callback.
+OIDC_ISSUER = os.environ.get("OIDC_ISSUER", "")
+OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "")
+OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET", "")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES") or "openid email profile"
+# Treat the provider's email as verified when it sends no `email_verified`
+# claim (Microsoft Entra ID). Only for a provider you run or trust.
+OIDC_TRUST_EMAIL = (os.environ.get("OIDC_TRUST_EMAIL") or "").lower() in ("1", "true", "yes")
+# Only when the address Django sees isn't the public one.
+OIDC_REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI", "")
+
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 

@@ -138,6 +138,7 @@ class UserViewSet(BaseViewSet):
       the email (and the response) carries a 3-day set-password link.
     - `POST users/<id>/disable` | `/enable` - a disabled user can't log
       in, and every session and token of theirs ends now.
+    - `POST users/<id>/unlock` - ends a lock from too many wrong passwords.
     - `POST users/<id>/reset-link` - a 3-day password link to hand over.
     - `GET users/<id>/sessions`, `POST users/<id>/revoke-sessions` - their
       logins and other credentials (`core_api.system` session providers,
@@ -214,6 +215,15 @@ class UserViewSet(BaseViewSet):
         if not user.is_active:
             User.objects.filter(id=user.id).update(is_active=True)
             audit("user.enabled", request=request, target=user)
+        return Response(UserAccountSerializer(User.objects.get(id=user.id)).data)
+
+    @action(detail=True, methods=["post"])
+    def unlock(self, request, pk=None):
+        """Ends a lock from too many wrong passwords (`lockout.py`) now."""
+        user = self.get_object()
+        if user.locked_until or user.failed_login_count:
+            User.objects.filter(id=user.id).update(failed_login_count=0, locked_until=None)
+            audit("user.unlocked", request=request, target=user)
         return Response(UserAccountSerializer(User.objects.get(id=user.id)).data)
 
     @action(detail=True, methods=["post"], url_path="reset-link")

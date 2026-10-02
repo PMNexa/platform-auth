@@ -12,6 +12,8 @@ export interface AdminUser {
   is_active: boolean;
   email_verified_at: string | null;
   last_login_at: string | null;
+  /** Set while the account is locked after too many wrong passwords. */
+  locked_until: string | null;
   created_at: string;
 }
 
@@ -34,6 +36,7 @@ export function usersApi(accessToken: string) {
       post<AdminUser & { set_password_url: string }>("/api/v1/users/invite", { name, email }),
     disable: (id: string) => post<AdminUser>(`/api/v1/users/${id}/disable`),
     enable: (id: string) => post<AdminUser>(`/api/v1/users/${id}/enable`),
+    unlock: (id: string) => post<AdminUser>(`/api/v1/users/${id}/unlock`),
     resetLink: (id: string) => post<{ url: string; expires_in_hours: number }>(`/api/v1/users/${id}/reset-link`),
     sessions: (id: string) => apiRequest<UserSessions>(`/api/v1/users/${id}/sessions`, auth),
     revokeSessions: (id: string) => post<{ revoked: number }>(`/api/v1/users/${id}/revoke-sessions`),

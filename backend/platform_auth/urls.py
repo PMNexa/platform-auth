@@ -2,6 +2,7 @@ from django.urls import path
 
 from platform_auth.views.account import ChangeMyPasswordView, DeleteMyAccountView, MyDataView
 from platform_auth.views import (
+    AuthConfigView,
     ForgotPasswordView,
     LoginView,
     LogoutView,
@@ -11,6 +12,8 @@ from platform_auth.views import (
     ResetPasswordView,
     SetupView,
     SignupView,
+    SsoCallbackView,
+    SsoStartView,
     VerifyEmailView,
 )
 
@@ -28,4 +31,7 @@ urlpatterns = [
     path("me/password", ChangeMyPasswordView.as_view(), name="me-password"),
     path("me/export", MyDataView.as_view(), name="me-export"),
     path("me/delete", DeleteMyAccountView.as_view(), name="me-delete"),
+    path("config", AuthConfigView.as_view(), name="config"),
+    path("sso/start", SsoStartView.as_view(), name="sso-start"),
+    path("sso/callback", SsoCallbackView.as_view(), name="sso-callback"),
 ]

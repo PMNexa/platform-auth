@@ -1,20 +1,33 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "../auth/AuthContext";
 import { VerificationPendingError } from "../auth/errors";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { CheckEmailNotice } from "../screens/AccountScreens";
+import SsoButton from "../screens/SsoButton";
 import { ApiError } from "../lib/api/client";
 import type { Session } from "../lib/api/auth";
 
-const signupSchema = z.object({
-  name: z.string().trim().min(1, "Name is required."),
-  email: z.string().trim().min(1, "Email is required."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-});
+// The minimum length is a setting of the instance (`auth/config`); its
+// other rules (common passwords) come back as the server's own message.
+function signupSchema(minLength: number) {
+  return z.object({
+    name: z.string().trim().min(1, "Name is required."),
+    email: z.string().trim().min(1, "Email is required."),
+    password: z.string().min(minLength, `Password must be at least ${minLength} characters.`),
+  });
+}
 
-type SignupFormValues = z.infer<typeof signupSchema>;
+type SignupFormValues = z.infer<ReturnType<typeof signupSchema>>;
+
+/** The API's message, or its per-field ones (a refused password comes back under `password`). */
+function errorMessage(err: unknown): string {
+  if (!(err instanceof ApiError)) return "Something went wrong. Please try again.";
+  const fields = (err.body as { field_errors?: Record<string, string[]> | null } | undefined)?.field_errors;
+  return fields ? Object.values(fields).flat().join(" ") : err.message;
+}
 
 export interface SignupProps {
   // See Login's own docstring for why this has no react-router dependency.
@@ -27,10 +40,27 @@ export interface SignupProps {
   defaultEmail?: string;
   /** First-run onboarding: creates the first account as the admin (`/setup`) instead of signing up. */
   setup?: boolean;
+  /** Where single sign-on returns to afterwards (a same-origin path). */
+  next?: string;
 }
 
-function Signup({ onSuccess, title = "platform-auth", setup = false, footer, defaultEmail }: SignupProps) {
+/** The signup link's `?ref=` (who sent the visitor) - read here, since this page has no router. */
+function signupRef(): string | undefined {
+  try {
+    return new URLSearchParams(window.location.search).get("ref")?.slice(0, 64) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function Signup({ onSuccess, title = "platform-auth", setup = false, footer, defaultEmail, next }: SignupProps) {
   const auth = useAuth();
+  const config = useAuthConfig();
+  const minLength = config?.password_min_length ?? 8;
+  const resolver = useMemo(() => zodResolver(signupSchema(minLength)), [minLength]);
+  // Single sign-on never creates the first (admin) account - setup keeps its form.
+  const sso = setup ? null : config?.sso;
+  const ssoOnly = !setup && config !== null && !config.password_login;
   const signup = setup ? auth.setup : auth.signup;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,20 +71,20 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignupFormValues>({ resolver: zodResolver(signupSchema), defaultValues: { email: defaultEmail ?? "" } });
+  } = useForm<SignupFormValues>({ resolver, defaultValues: { email: defaultEmail ?? "" } });
 
   async function onSubmit(values: SignupFormValues) {
     setError(null);
     setSubmitting(true);
     try {
-      const session = await signup(values.name, values.email, values.password);
+      const session = await signup(values.name, values.email, values.password, { next, ref: signupRef() });
       onSuccess(session);
     } catch (err) {
       if (err instanceof VerificationPendingError) {
         setPending(err.email);
         return;
       }
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(errorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -78,10 +108,16 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
                 ) : (
                   <p className="text-center mb-3">Create your account</p>
                 )}
+                {sso && !pending && (
+                  <>
+                    <SsoButton sso={sso} next={next} primary={ssoOnly} />
+                    {!ssoOnly && <div className="hr-text my-3">or</div>}
+                  </>
+                )}
                 {pending ? (
-                  <CheckEmailNotice email={pending} />
+                  <CheckEmailNotice email={pending} next={next} />
                 ) : (
-                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
+                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate hidden={ssoOnly}>
                   <div className="mb-3">
                     <label className="form-label" htmlFor="name">Name</label>
                     <input
@@ -114,6 +150,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
                       {...register("password")}
                     />
                     {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
+                    <small className="form-hint">At least {minLength} characters.</small>
                   </div>
                   {error && <div className="alert alert-danger" role="alert">{error}</div>}
                   <div className="d-grid gap-2">

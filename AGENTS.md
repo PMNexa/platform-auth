@@ -77,8 +77,6 @@ from enforcing CSRF).
   cookie (`revoked_reason="logout"`) and deletes the cookie. Needs no
   access token (it may have expired); 204 even with no/unknown cookie.
 
-Not built yet (deliberately out of scope): login rate limiting.
-
 Also an **importable pip package**: `pyproject.toml` at this directory's
 root packages `platform_auth` (the Django app) and `core_api` (the
 error-contract/exception-handler support it needs) as importable units
@@ -100,6 +98,68 @@ in the `default` cache - give a multi-worker host a shared one - and
 the client IP is DRF's (`NUM_PROXIES` from the end of
 `X-Forwarded-For`). Over the limit: 429 `rate_limited` with
 `Retry-After`, shown by the login/signup screens as-is.
+
+**Lockout** (`platform_auth/lockout.py`): `auth.lockout_attempts` wrong
+passwords in a row (system setting, default 10, 0 = never) set
+`User.locked_until` for `auth.lockout_minutes` (default 15). While
+locked, login answers 403 `account_locked` whatever the password. A
+successful login, a password reset and `POST users/<id>/unlock` (admin)
+clear it; locking is audited (`auth.account_locked`) and emailed to the
+owner. Only real accounts lock - that tells a guesser the email exists,
+which signup's `email_taken` already does. Both new columns have
+database defaults, so the previous release's code still runs against the
+migrated table.
+
+**Password rules** (`platform_auth/passwords.py`): `check_password` runs
+wherever a password is SET (signup, setup, reset, change) - never at
+login, so tightening a rule locks nobody out. `auth.password_min_length`
+(default 8) and `auth.password_reject_common` (Django's common-password
+list). A refusal is a 400 with `field_errors` under the password field;
+the screens show those. The serializers carry no length of their own.
+
+**Single sign-on** (`platform_auth/sso.py`, `views/sso.py`): one OpenID
+Connect provider, authorization code + PKCE, this server as the
+confidential client. Host settings from the environment: `OIDC_ISSUER`,
+`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` (all three = on), optional
+`OIDC_SCOPES`, `OIDC_TRUST_EMAIL`, `OIDC_REDIRECT_URI`; read with
+`getattr`, so a host that doesn't define them just has no SSO.
+- `GET auth/sso/start?next=` redirects to the provider; state, nonce,
+  PKCE verifier and `next` ride in a signed httpOnly 10-minute cookie
+  (`sso_state`, path `.../auth/sso`) - no table.
+- `GET auth/sso/callback` exchanges the code, verifies the id token
+  (PyJWT + the provider's JWKS; asymmetric algorithms only; issuer,
+  audience, expiry, nonce), resolves the account, sets the refresh
+  cookie (`start_session` + `set_refresh_cookie`, split out of
+  `issue_session_response`) and redirects to the host's `sso` page
+  (`PLATFORM_AUTH_PAGES`, default `/auth/sso` - `routes/sso.tsx`, which
+  calls `refreshSession()`). A failure redirects to the `login` page
+  with `?sso_error=<code>` - a code the frontend maps to text
+  (`screens/SsoButton.tsx`), never the provider's own words.
+- Account (`resolve_user`): `SsoIdentity` (issuer + `sub`) -> that user;
+  else the user with the provider's email, only if `email_verified`
+  (absent = unverified unless `OIDC_TRUST_EMAIL`), linked from then on;
+  else a new user (`UNUSABLE_PASSWORD`) if `signup_refusal` allows and
+  setup isn't pending. Disabled accounts are refused.
+- `auth.password_login` (system setting, env `AUTH_PASSWORD_LOGIN`) off
+  = SSO only: `accounts.password_login_required()` refuses login,
+  signup, verify-email and reset (each would start a session), forgot
+  sends nothing. Ignored while SSO isn't configured.
+- **Signup keeps where it was heading.** The signup page sends its
+  `?next=` (and `?ref=`) with the form; when email verification is on,
+  the confirmation link carries that `next` (`accounts.safe_next`: a
+  path on this site only, same rule as the frontend's `nextPath`), and
+  `routes/verify.tsx` goes there after signing in - so an invitation or
+  an AI client's consent page isn't lost to the email round trip.
+  Resend takes `next` too. The `auth.signup` audit event records the
+  origin (`views/signup.py`'s `signup_origin`): `next`'s path (never its
+  query), an OAuth `client_id` if it had one, and `ref`.
+- `GET auth/config` (public): `{password_login, password_min_length,
+  sso: {label, start_url} | null}` - `useAuthConfig()` on the login,
+  signup, reset and account screens.
+- The three network calls are module-level functions in `sso.py`
+  (`fetch_json`, `post_form`, `signing_key`); tests replace them and
+  sign real id tokens (apps/main's `tests/test_auth_security.py`).
+- Needs `cryptography` (`pyjwt[crypto]` in pyproject).
 
 ## RBAC (role-based access control)
 

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button, Card, CardBody, CardHeader, CardTitle } from "platform-core";
 import { changeMyPassword, deleteMyAccount, exportMyData } from "../lib/api/auth";
 import { ApiError } from "../lib/api/client";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { clearSession, getSession, setSession } from "../session";
 
 /**
@@ -21,11 +22,12 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
   const [repeatPassword, setRepeatPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const minLength = useAuthConfig()?.password_min_length ?? 8;
 
   async function changePassword(event: FormEvent) {
     event.preventDefault();
     setPasswordChanged(false);
-    if (newPassword.length < 8) return setPasswordError("The new password must be at least 8 characters.");
+    if (newPassword.length < minLength) return setPasswordError(`The new password must be at least ${minLength} characters.`);
     if (newPassword !== repeatPassword) return setPasswordError("The new passwords don't match.");
     setBusy(true);
     setPasswordError(null);
@@ -37,7 +39,9 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
       setRepeatPassword("");
       setPasswordChanged(true);
     } catch (thrown) {
-      setPasswordError(thrown instanceof ApiError ? thrown.message : String(thrown));
+      // A refused password comes back per field (`new_password`).
+      const fields = thrown instanceof ApiError ? (thrown.body as { field_errors?: Record<string, string[]> | null } | undefined)?.field_errors : null;
+      setPasswordError(fields ? Object.values(fields).flat().join(" ") : thrown instanceof ApiError ? thrown.message : String(thrown));
     } finally {
       setBusy(false);
     }
@@ -120,7 +124,7 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
-              <small className="form-hint mb-2">At least 8 characters.</small>
+              <small className="form-hint mb-2">At least {minLength} characters.</small>
               <label className="form-label" htmlFor="repeat-password">Repeat new password</label>
               <input
                 id="repeat-password"

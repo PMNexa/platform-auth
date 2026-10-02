@@ -20,7 +20,8 @@ class User(TimestampedModel):
     an unverified account can't log in while the instance requires
     verification (`accounts.verification_required`). A password hash of
     `UNUSABLE_PASSWORD` (an invited account that hasn't set one) never
-    matches.
+    matches. `failed_login_count` counts wrong passwords in a row;
+    reaching `auth.lockout_attempts` sets `locked_until` (`lockout.py`).
     """
 
     id = models.UUIDField(primary_key=True, default=generate_uuid7, editable=False)
@@ -30,6 +31,8 @@ class User(TimestampedModel):
     is_active = models.BooleanField(default=True, db_default=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
+    failed_login_count = models.PositiveIntegerField(default=0, db_default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "user"
