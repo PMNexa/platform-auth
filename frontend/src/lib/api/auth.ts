@@ -127,6 +127,17 @@ export async function resetPassword(token: string, password: string): Promise<Lo
   });
 }
 
+/** Changes the signed-in user's password; every other session ends, this one gets a new session back. */
+export async function changeMyPassword(accessToken: string, currentPassword: string, newPassword: string): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>("/api/v1/auth/me/password", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    withCredentials: true,
+    skipAuthRedirect: true,
+    data: { current_password: currentPassword, new_password: newPassword },
+  });
+}
+
 /** The signed-in user's own data, as the JSON the browser downloads. */
 export async function exportMyData(accessToken: string): Promise<Blob> {
   return apiRequest<Blob>("/api/v1/auth/me/export", {

@@ -10,7 +10,8 @@
   (also confirms the email - the link proved it), ends every other
   session, and logs in.
 
-And the signed-in user's own data rights: `GET auth/me/export` (a JSON
+And the signed-in user's own account: `POST auth/me/password`
+`{current_password, new_password}`, `GET auth/me/export` (a JSON
 download of everything every module holds about them) and `POST
 auth/me/delete` `{password}` (erase the account and what they own).
 """
@@ -120,6 +121,36 @@ class ResetPasswordView(APIView):
 
 class _PasswordSerializer(serializers.Serializer):
     password = serializers.CharField(trim_whitespace=False)
+
+
+class _ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(trim_whitespace=False)
+    new_password = serializers.CharField(trim_whitespace=False, min_length=8)
+
+
+class ChangeMyPasswordView(APIView):
+    """`POST auth/me/password` `{current_password, new_password}` - sets
+    the caller's password, ends every other session, and answers with a
+    fresh one (like a reset) so this browser stays logged in."""
+
+    throttle_classes = [SignupRateThrottle]
+
+    def post(self, request):
+        if request.user is None or getattr(request.user, "impersonated_by", None):
+            raise ApiError(403, "forbidden", "Change your own password from your own session.")
+        serializer = _ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        if not verify_password_or_dummy(serializer.validated_data["current_password"], user.password_hash):
+            raise ApiError(400, "wrong_password", "That's not your current password.")
+        user.password_hash = hash_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password_hash", "updated_at"])
+        revoke_all_sessions(user, "password_changed")
+        audit("auth.password_changed", request=request, actor=user, target=user)
+        send_notice(user, "Your password was changed",
+                    "Your GoalNexa password was just changed, and you were logged out everywhere else.\n\n"
+                    "If this wasn't you, contact your administrator right away.", "password_changed")
+        return issue_session_response(user, request)
 
 
 class MyDataView(APIView):

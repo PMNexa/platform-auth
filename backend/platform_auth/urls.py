@@ -1,6 +1,6 @@
 from django.urls import path
 
-from platform_auth.views.account import DeleteMyAccountView, MyDataView
+from platform_auth.views.account import ChangeMyPasswordView, DeleteMyAccountView, MyDataView
 from platform_auth.views import (
     ForgotPasswordView,
     LoginView,
@@ -25,6 +25,7 @@ urlpatterns = [
     path("resend-verification", ResendVerificationView.as_view(), name="resend-verification"),
     path("password/forgot", ForgotPasswordView.as_view(), name="password-forgot"),
     path("password/reset", ResetPasswordView.as_view(), name="password-reset"),
+    path("me/password", ChangeMyPasswordView.as_view(), name="me-password"),
     path("me/export", MyDataView.as_view(), name="me-export"),
     path("me/delete", DeleteMyAccountView.as_view(), name="me-delete"),
 ]
