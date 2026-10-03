@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { authConfig, type AuthConfig } from "../lib/api/auth";
 
 /** What the auth pages show before the server has answered: the plain email + password form. */
-export const DEFAULT_AUTH_CONFIG: AuthConfig = { password_login: true, password_min_length: 8, sso: null };
+export const DEFAULT_AUTH_CONFIG: AuthConfig = { password_login: true, password_min_length: 8, sso: [] };
 
 /**
  * The instance's public auth settings (`GET auth/config`) - single

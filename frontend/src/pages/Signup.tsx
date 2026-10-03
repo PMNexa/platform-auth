@@ -59,7 +59,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
   const minLength = config?.password_min_length ?? 8;
   const resolver = useMemo(() => zodResolver(signupSchema(minLength)), [minLength]);
   // Single sign-on never creates the first (admin) account - setup keeps its form.
-  const sso = setup ? null : config?.sso;
+  const sso = setup ? [] : (config?.sso ?? []);
   const ssoOnly = !setup && config !== null && !config.password_login;
   const signup = setup ? auth.setup : auth.signup;
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +108,7 @@ function Signup({ onSuccess, title = "platform-auth", setup = false, footer, def
                 ) : (
                   <p className="text-center mb-3">Create your account</p>
                 )}
-                {sso && !pending && (
+                {sso.length > 0 && !pending && (
                   <>
                     <SsoButton sso={sso} next={next} primary={ssoOnly} />
                     {!ssoOnly && <div className="hr-text my-3">or</div>}

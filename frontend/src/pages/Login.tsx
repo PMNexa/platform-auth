@@ -78,7 +78,7 @@ function Login({ onSuccess, title = "platform-auth", footer, forgotPassword, nex
             <div className="card">
               <div className="card-body p-4">
                 <p className="text-center mb-3">Sign in to start your session</p>
-                {config?.sso && (
+                {config && config.sso.length > 0 && (
                   <>
                     <SsoButton sso={config.sso} next={next} primary={!config.password_login} />
                     {config.password_login && <div className="hr-text my-3">or</div>}

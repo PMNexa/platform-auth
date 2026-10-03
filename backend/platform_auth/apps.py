@@ -58,15 +58,22 @@ class PlatformAuthConfig(AppConfig):
         ))
         register_setting(SettingDef(
             "auth.sso_label", "Single sign-on button", STRING, default="", group="Single sign-on",
-            env="OIDC_LABEL", help='Shown as "Sign in with ...", e.g. Google or your company\'s name. Empty: SSO.',
+            env="OIDC_LABEL",
+            help='Shown as "Sign in with ...", e.g. Google or your company\'s name. Empty: SSO. For the provider set '
+                 'with OIDC_ISSUER; the ones in OIDC_PROVIDERS carry their own label.',
         ))
         register_setting(SettingDef(
             "auth.password_login", "Allow email + password login", BOOL, default=True, group="Single sign-on",
             env="AUTH_PASSWORD_LOGIN",
             help="Off: single sign-on is the only way in. Only applies while SSO is configured (OIDC_ISSUER, "
-                 "OIDC_CLIENT_ID, OIDC_CLIENT_SECRET). If the provider breaks, AUTH_PASSWORD_LOGIN=true in the "
+                 "OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_PROVIDERS). If the provider breaks, AUTH_PASSWORD_LOGIN=true in the "
                  "environment turns it back on.",
         ))
+
+        # A typo in OIDC_PROVIDERS stops the app here, not at someone's sign-in.
+        from platform_auth import sso
+
+        sso.check_config()
 
         post_migrate.connect(signals.sync_after_migrate, sender=self)
         post_save.connect(signals.assign_default_roles, sender=self.get_model("User"))

@@ -117,15 +117,27 @@ login, so tightening a rule locks nobody out. `auth.password_min_length`
 list). A refusal is a 400 with `field_errors` under the password field;
 the screens show those. The serializers carry no length of their own.
 
-**Single sign-on** (`platform_auth/sso.py`, `views/sso.py`): one OpenID
-Connect provider, authorization code + PKCE, this server as the
+**Single sign-on** (`platform_auth/sso.py`, `views/sso.py`): OpenID
+Connect providers, authorization code + PKCE, this server as the
 confidential client. Host settings from the environment: `OIDC_ISSUER`,
-`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` (all three = on), optional
-`OIDC_SCOPES`, `OIDC_TRUST_EMAIL`, `OIDC_REDIRECT_URI`; read with
-`getattr`, so a host that doesn't define them just has no SSO.
-- `GET auth/sso/start?next=` redirects to the provider; state, nonce,
-  PKCE verifier and `next` ride in a signed httpOnly 10-minute cookie
-  (`sso_state`, path `.../auth/sso`) - no table.
+`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` (all three = on; the provider's
+id is `default`), optional `OIDC_SCOPES`, `OIDC_TRUST_EMAIL`,
+`OIDC_REDIRECT_URI`; read with `getattr`, so a host that doesn't define
+them just has no SSO.
+- **Several providers**: `OIDC_PROVIDERS`, a list of `{id, label, issuer,
+  client_id, client_secret}` (+ `scopes`, `trust_email`) the host parses
+  from JSON. `sso.providers()` = the `default` one, then the listed ones
+  (a `Provider` each); everything downstream takes a `Provider`, nothing
+  reads `OIDC_ISSUER` directly. A bad list raises `ImproperlyConfigured`
+  at startup (`check_config`, from apps.py). All providers share ONE
+  callback/redirect URI: the provider's id rides in the state cookie
+  (`p`), and a callback carrying another issuer's `iss` (RFC 9207) is
+  refused. `auth.sso_label` names only the `default` one. Any provider
+  can sign in as an account whose email it vouches for.
+- `GET auth/sso/start?provider=<id>&next=` (no `provider`: the first
+  one) redirects to the provider; state, nonce, PKCE verifier, provider
+  id and `next` ride in a signed httpOnly 10-minute cookie (`sso_state`,
+  path `.../auth/sso`) - no table.
 - `GET auth/sso/callback` exchanges the code, verifies the id token
   (PyJWT + the provider's JWKS; asymmetric algorithms only; issuer,
   audience, expiry, nonce), resolves the account, sets the refresh
@@ -154,7 +166,8 @@ confidential client. Host settings from the environment: `OIDC_ISSUER`,
   origin (`views/signup.py`'s `signup_origin`): `next`'s path (never its
   query), an OAuth `client_id` if it had one, and `ref`.
 - `GET auth/config` (public): `{password_login, password_min_length,
-  sso: {label, start_url} | null}` - `useAuthConfig()` on the login,
+  sso: [{id, label, start_url}]}` (one button each - `SsoButton`
+  renders the list; empty = none) - `useAuthConfig()` on the login,
   signup, reset and account screens.
 - The three network calls are module-level functions in `sso.py`
   (`fetch_json`, `post_form`, `signing_key`); tests replace them and

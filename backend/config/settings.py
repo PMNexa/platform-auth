@@ -5,6 +5,7 @@ database. No dependency on platform-core's models/DB - modules in this
 architecture share nothing at the source/DB level, only HTTP contracts.
 """
 
+import json
 import os
 from pathlib import Path
 
@@ -111,7 +112,7 @@ REFRESH_COOKIE_SECURE = os.environ.get("DJANGO_DEBUG", "true").lower() != "true"
 # (this module standalone, served at "/").
 URL_PREFIX = os.environ.get("URL_PREFIX", "")
 
-# --- Single sign-on (platform_auth/sso.py): one OpenID Connect provider.
+# --- Single sign-on (platform_auth/sso.py): OpenID Connect providers.
 # All three set = "Sign in with ..." on the login page. The redirect URI
 # to register at the provider: <this app's address>/api/v1/auth/sso/callback.
 OIDC_ISSUER = os.environ.get("OIDC_ISSUER", "")
@@ -123,6 +124,10 @@ OIDC_SCOPES = os.environ.get("OIDC_SCOPES") or "openid email profile"
 OIDC_TRUST_EMAIL = (os.environ.get("OIDC_TRUST_EMAIL") or "").lower() in ("1", "true", "yes")
 # Only when the address Django sees isn't the public one.
 OIDC_REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI", "")
+# More providers, each with its own button: a JSON list of {"id", "label",
+# "issuer", "client_id", "client_secret"} (optional "scopes",
+# "trust_email"). Same redirect URI as above.
+OIDC_PROVIDERS = json.loads(os.environ.get("OIDC_PROVIDERS") or "[]")
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True

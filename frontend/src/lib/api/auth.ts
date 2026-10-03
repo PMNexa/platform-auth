@@ -53,13 +53,21 @@ export async function signup(
   });
 }
 
+export interface SsoProvider {
+  id: string;
+  label: string;
+  /** Whose logo the button shows: "google", "microsoft", or "" (a neutral key). */
+  icon?: string;
+  start_url: string;
+}
+
 /** The instance's public auth settings - what the auth pages need before anyone is signed in. */
 export interface AuthConfig {
   /** False: single sign-on is the only way in - no password form, no signup form. */
   password_login: boolean;
   password_min_length: number;
-  /** Set when a single sign-on provider is configured: its button's label and where the button goes. */
-  sso: { label: string; start_url: string } | null;
+  /** The single sign-on providers, one button each, in order: the button's label and where it goes. Empty: none. */
+  sso: SsoProvider[];
 }
 
 let configPromise: Promise<AuthConfig> | null = null;

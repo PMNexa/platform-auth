@@ -1,8 +1,9 @@
 """Single sign-on (`platform_auth/sso.py`), as two browser redirects:
 
-- `GET auth/sso/start?next=/path` - to the provider, with what the
-  callback must get back (state, nonce, PKCE verifier, `next`) in a
-  signed, httpOnly, 10-minute cookie.
+- `GET auth/sso/start?provider=<id>&next=/path` - to that provider (no
+  `provider`: the first one), with what the callback must get back
+  (state, nonce, PKCE verifier, the provider's id, `next`) in a signed,
+  httpOnly, 10-minute cookie.
 - `GET auth/sso/callback?code&state` - back from the provider: signs the
   person in (the refresh cookie, as a login sets it) and redirects to the
   host's `sso` page (`PLATFORM_AUTH_PAGES`, default `/auth/sso`), which
@@ -58,8 +59,12 @@ class AuthConfigView(APIView):
         return Response({
             "password_login": sso.password_login_enabled(),
             "password_min_length": passwords.min_length(),
-            "sso": {"label": sso.label(), "start_url": f"{settings.URL_PREFIX}/api/v1/auth/sso/start"}
-            if sso.configured() else None,
+            # One button each, in this order.
+            "sso": [
+                {"id": p.id, "label": p.label, "icon": sso.icon(p),
+                 "start_url": f"{settings.URL_PREFIX}/api/v1/auth/sso/start?provider={p.id}"}
+                for p in sso.providers()
+            ],
         })
 
 
@@ -67,11 +72,12 @@ class SsoStartView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        if not sso.configured():
+        provider = sso.provider(request.query_params.get("provider"))
+        if provider is None:
             raise Http404()
         next_path = _safe_next(request.query_params.get("next"))
         try:
-            url, pending = sso.begin(request)
+            url, pending = sso.begin(request, provider)
         except sso.SsoError as exc:
             logger.warning("SSO start failed: %s", exc)
             return _failed(request, exc.code, next_path)
@@ -102,12 +108,21 @@ class SsoCallbackView(APIView):
         next_path = _safe_next(pending.get("next"))
         if not hmac.compare_digest(str(request.query_params.get("state", "")), str(pending.get("s", ""))):
             return _failed(request, "expired", next_path)
+        # The one the sign-in was started with - it may have been removed since.
+        provider = sso.provider(str(pending.get("p") or sso.DEFAULT_ID))
+        if provider is None:
+            return _failed(request, "expired", next_path)
+        # Every provider comes back to this one address; one that says who
+        # it is (RFC 9207) must be the one we sent the browser to.
+        answered_by = request.query_params.get("iss")
+        if answered_by and answered_by.rstrip("/") != provider.issuer:
+            return _failed(request, "expired", next_path)
         if request.query_params.get("error"):
             # The person cancelled, or the provider refused them.
             return _failed(request, "denied", next_path)
         try:
-            claims = sso.complete(request, request.query_params.get("code", ""), pending)
-            user = sso.resolve_user(claims, request)
+            claims = sso.complete(request, provider, request.query_params.get("code", ""), pending)
+            user = sso.resolve_user(claims, request, provider)
         except sso.SsoError as exc:
             logger.warning("SSO sign-in failed (%s): %s", exc.code, exc)
             return _failed(request, exc.code, next_path)
