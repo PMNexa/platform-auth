@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, FormCheck, FormControl, FormLabel } from "platform-core";
 import { changeMyPassword, deleteMyAccount, exportMyData } from "../lib/api/auth";
 import { ApiError } from "../lib/api/client";
 import { useAuthConfig } from "../auth/useAuthConfig";
@@ -106,31 +106,30 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
           <CardBody>
             <form onSubmit={changePassword}>
               <p className="text-secondary">Changing your password logs you out everywhere else.</p>
-              <label className="form-label" htmlFor="current-password">Current password</label>
-              <input
+              <FormLabel htmlFor="current-password">Current password</FormLabel>
+              <FormControl
                 id="current-password"
                 type="password"
                 autoComplete="current-password"
-                className="form-control mb-2"
+                className="mb-2"
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
               />
-              <label className="form-label" htmlFor="new-password">New password</label>
-              <input
+              <FormLabel htmlFor="new-password">New password</FormLabel>
+              <FormControl
                 id="new-password"
                 type="password"
                 autoComplete="new-password"
-                className="form-control"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
               <small className="form-hint mb-2">At least {minLength} characters.</small>
-              <label className="form-label" htmlFor="repeat-password">Repeat new password</label>
-              <input
+              <FormLabel htmlFor="repeat-password">Repeat new password</FormLabel>
+              <FormControl
                 id="repeat-password"
                 type="password"
                 autoComplete="new-password"
-                className="form-control mb-3"
+                className="mb-3"
                 value={repeatPassword}
                 onChange={(event) => setRepeatPassword(event.target.value)}
               />
@@ -154,19 +153,20 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 Deletes your account, your goals and personal cycles, and your comments. Organizations you're the only
                 member of are deleted; in others, the longest-standing admin becomes owner.
               </p>
-              <label className="form-label" htmlFor="delete-password">Your password</label>
-              <input
+              <FormLabel htmlFor="delete-password">Your password</FormLabel>
+              <FormControl
                 id="delete-password"
                 type="password"
                 autoComplete="current-password"
-                className="form-control mb-2"
+                className="mb-2"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <label className="form-check">
-                <input className="form-check-input" type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
-                <span className="form-check-label">I understand this can't be undone.</span>
-              </label>
+              <FormCheck
+                label="I understand this can't be undone."
+                checked={confirm}
+                onChange={(event) => setConfirm(event.target.checked)}
+              />
               <Button type="submit" variant="danger" disabled={busy || !confirm || !password}>
                 Delete my account
               </Button>
