@@ -8,6 +8,8 @@ from datetime import UTC, datetime, timedelta
 from django.conf import settings
 from rest_framework.response import Response
 
+from core_api.system import WEB, seen
+
 from platform_auth.models import RefreshToken, User
 from platform_auth.security import create_access_token, create_refresh_token, hash_refresh_token
 from platform_auth.serializers import UserSerializer
@@ -43,6 +45,9 @@ def start_session(user: User, request=None) -> tuple[str, str, int]:
         ip=_client_ip(request) if request is not None else "",
         user_agent=(request.META.get("HTTP_USER_AGENT", "")[:255] if request is not None else ""),
     )
+    # Every sign-in and every 15-minute refresh of an open page: the user is
+    # active on the website (System > Insights).
+    seen(user.id, WEB)
     return access_token, raw_refresh_token, int((expires_at - now).total_seconds())
 
 

@@ -78,6 +78,7 @@ class PlatformAuthConfig(AppConfig):
         post_migrate.connect(signals.sync_after_migrate, sender=self)
         post_save.connect(signals.assign_default_roles, sender=self.get_model("User"))
         register_usage_provider(UsageProvider("Accounts", _usage))
+        _register_insights()
         register_export_provider("account", _export)
 
 
@@ -119,15 +120,43 @@ def _usage() -> list[dict]:
 
     from django.utils import timezone
 
+    from core_api.system import active_user_count
     from platform_auth.models import User
 
     now = timezone.now()
     users = User.objects.all()
+
+    def active(days):
+        # Active (website or AI assistant) when the host keeps it, else signed in.
+        found = active_user_count(days)
+        return found if found is not None else users.filter(last_login_at__gte=now - timedelta(days=days)).count()
+
     return [
         {"label": "Users", "value": users.count()},
-        {"label": "Signed in, last 7 days", "value": users.filter(last_login_at__gte=now - timedelta(days=7)).count()},
-        {"label": "Signed in, last 30 days", "value": users.filter(last_login_at__gte=now - timedelta(days=30)).count()},
+        {"label": "Active, last 7 days", "value": active(7), "hint": "Website or AI assistant"},
+        {"label": "Active, last 30 days", "value": active(30), "hint": "Website or AI assistant"},
         {"label": "New, last 7 days", "value": users.filter(created_at__gte=now - timedelta(days=7)).count()},
         {"label": "Disabled", "value": users.filter(is_active=False).count()},
         {"label": "Email not confirmed", "value": users.filter(email_verified_at__isnull=True).count()},
     ]
+
+
+def _register_insights() -> None:
+    from datetime import datetime, timedelta
+    from datetime import timezone as dt_timezone
+
+    from core_api.system import InsightSeries, register_insight_series
+    from platform_auth.models import User
+
+    def end_of(day):
+        return datetime.combine(day + timedelta(days=1), datetime.min.time(), tzinfo=dt_timezone.utc)
+
+    register_insight_series(InsightSeries(
+        "users", "Users", "Accounts", lambda day: User.objects.filter(created_at__lt=end_of(day)).count(),
+        help="Accounts that existed at the end of the day (deleted ones aren't counted).",
+    ))
+    register_insight_series(InsightSeries(
+        "signups", "Sign-ups", "Accounts",
+        lambda day: User.objects.filter(created_at__gte=end_of(day) - timedelta(days=1), created_at__lt=end_of(day)).count(),
+        kind="daily",
+    ))
