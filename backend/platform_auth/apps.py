@@ -7,6 +7,8 @@ class PlatformAuthConfig(AppConfig):
     name = 'platform_auth'
 
     def ready(self):
+        from platform_auth import openapi  # noqa: F401 - registers its OpenAPI auth scheme(s)
+
         from core_api.system import (
             BOOL,
             CHOICE,

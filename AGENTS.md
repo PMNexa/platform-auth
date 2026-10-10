@@ -174,6 +174,16 @@ them just has no SSO.
   sign real id tokens (apps/main's `tests/test_auth_security.py`).
 - Needs `cryptography` (`pyjwt[crypto]` in pyproject).
 
+## API reference (OpenAPI)
+
+`platform_auth/openapi.py` describes `ActorAuthentication` as the
+`bearerAuth` scheme (imported in `PlatformAuthConfig.ready`). The RBAC
+resources are `BaseViewSet`s, documented automatically; the plain views
+(login, signup, setup, refresh, me, password reset, SSO, exports) still
+show only their docstrings - annotate each with `@extend_schema` (reuse
+the serializer it already validates with). How: GoalNexa's
+`docs/api-reference.md`.
+
 ## RBAC (role-based access control)
 
 Enforced on EVERY `BaseViewSet` resource of the host, not just this
