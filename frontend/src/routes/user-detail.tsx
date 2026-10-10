@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CrudDetailScreen, useResourcePath, type LinkComponentProps } from "platform-core";
+import { CrudDetailScreen, UserLifecyclePanel, useResourcePath, type LinkComponentProps } from "platform-core";
 import { Link as RouterLink, useLocation, useNavigate, useOutletContext, useParams } from "react-router";
 import UserAdminPanel from "../screens/UserAdminPanel";
 
@@ -16,7 +16,7 @@ function CrudLink({ to, className, children, ...rest }: LinkComponentProps) {
   );
 }
 
-/** A user's page (`createRbacRoutes`' `detailFile`): the generic detail (name, role assignments), then the admin's account actions. */
+/** A user's page (`createRbacRoutes`' `detailFile`): the generic detail (name, role assignments), the admin's account actions, then their lifecycle email. */
 export default function UserDetailRoute() {
   const accessToken = useOutletContext<string>();
   const { id = "" } = useParams();
@@ -43,6 +43,8 @@ export default function UserDetailRoute() {
         onChanged={() => setVersion((v) => v + 1)}
         onDeleted={() => navigate(`/${basePath}`)}
       />
+      {/* Their email preferences and lifecycle emails (platform-core; nothing where that isn't installed). */}
+      <UserLifecyclePanel accessToken={accessToken} userId={id} />
     </div>
   );
 }
