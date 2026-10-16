@@ -76,6 +76,15 @@ from enforcing CSRF).
 - `POST /api/v1/auth/logout` — revokes the refresh token behind the
   cookie (`revoked_reason="logout"`) and deletes the cookie. Needs no
   access token (it may have expired); 204 even with no/unknown cookie.
+- **Native sessions (phone apps)**: login/signup/setup/password change
+  with `"client": "native"` (+ optional `"device_name"`) in the body
+  answer with `refresh_token` + `refresh_expires_in` in the body and NO
+  cookie; refresh and logout then take `{"refresh_token": ...}` in the
+  body (`_session.py`'s `native_client`/`raw_refresh_token`).
+  `RefreshToken.client` ("web"/"native") and `device_name` carry over on
+  every rotation, so a refresh answers the way the session started -
+  the same single-use compare-and-swap either way. The admin's session
+  list shows both.
 
 Also an **importable pip package**: `pyproject.toml` at this directory's
 root packages `platform_auth` (the Django app) and `core_api` (the
@@ -147,6 +156,17 @@ them just has no SSO.
   calls `refreshSession()`). A failure redirects to the `login` page
   with `?sso_error=<code>` - a code the frontend maps to text
   (`screens/SsoButton.tsx`), never the provider's own words.
+- **SSO for a phone app**: `sso/start?app_redirect=<uri>&code_challenge=<S256>`
+  (`&device_name=`), opened in the app's browser tab. `app_redirect` must
+  be in `PLATFORM_AUTH_APP_REDIRECTS` (main: `goalnexa://auth/sso`; not
+  listed = 400, never a redirect). The callback then redirects to it
+  with `?code=` (an `AppAuthCode`: SHA-256 stored, 2 minutes, single use
+  by conditional UPDATE) or `?error=<code>`, setting no cookie; the app
+  posts `{code, code_verifier}` to `sso/token` for a native session. A
+  wrong verifier doesn't spend the code. `AppRedirect` lets Django
+  redirect to that one custom scheme.
+- `GET auth/config` also carries `min_app_version` ({android, ios}, ""
+  = any) from the `apps.min_*_version` settings ("Phone apps" group).
 - Account (`resolve_user`): `SsoIdentity` (issuer + `sub`) -> that user;
   else the user with the provider's email, only if `email_verified`
   (absent = unverified unless `OIDC_TRUST_EMAIL`), linked from then on;

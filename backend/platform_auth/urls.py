@@ -14,6 +14,7 @@ from platform_auth.views import (
     SignupView,
     SsoCallbackView,
     SsoStartView,
+    SsoTokenView,
     VerifyEmailView,
 )
 
@@ -34,4 +35,5 @@ urlpatterns = [
     path("config", AuthConfigView.as_view(), name="config"),
     path("sso/start", SsoStartView.as_view(), name="sso-start"),
     path("sso/callback", SsoCallbackView.as_view(), name="sso-callback"),
+    path("sso/token", SsoTokenView.as_view(), name="sso-token"),
 ]

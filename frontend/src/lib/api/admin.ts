@@ -18,7 +18,7 @@ export interface AdminUser {
 }
 
 export interface UserSessions {
-  logins: { id: string; started_at: string; expires_at: string; ip: string; user_agent: string }[];
+  logins: { id: string; started_at: string; expires_at: string; ip: string; user_agent: string; client?: string; device_name?: string }[];
   other: {
     kind: string;
     label: string;

@@ -242,7 +242,7 @@ class UserViewSet(BaseViewSet):
         return Response({
             "logins": [
                 {"id": str(t.id), "started_at": t.issued_at, "expires_at": t.expires_at, "ip": t.ip,
-                 "user_agent": t.user_agent}
+                 "user_agent": t.user_agent, "client": t.client, "device_name": t.device_name}
                 for t in logins
             ],
             "other": [

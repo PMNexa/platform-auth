@@ -5,7 +5,7 @@ from platform_auth.views.me import MeView
 from platform_auth.views.refresh import RefreshView
 from platform_auth.views.setup import SetupView
 from platform_auth.views.signup import SignupView
-from platform_auth.views.sso import AuthConfigView, SsoCallbackView, SsoStartView
+from platform_auth.views.sso import AuthConfigView, SsoCallbackView, SsoStartView, SsoTokenView
 
 __all__ = [
     "AuthConfigView",
@@ -20,5 +20,6 @@ __all__ = [
     "SignupView",
     "SsoCallbackView",
     "SsoStartView",
+    "SsoTokenView",
     "VerifyEmailView",
 ]
