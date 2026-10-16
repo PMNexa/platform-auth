@@ -232,7 +232,7 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
             <tbody>
               {sessions?.logins.map((login) => (
                 <tr key={login.id}>
-                  <td>{browser(login.user_agent)}</td>
+                  <td>{login.client === "native" ? `App${login.device_name ? ` on ${login.device_name}` : ""}` : browser(login.user_agent)}</td>
                   <td>{when(login.started_at)}</td>
                   <td className="text-secondary">{login.ip || "—"}</td>
                 </tr>

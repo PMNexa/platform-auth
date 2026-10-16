@@ -72,6 +72,18 @@ class PlatformAuthConfig(AppConfig):
                  "environment turns it back on.",
         ))
 
+        # Phone apps (`GET auth/config`'s `min_app_version`): an app older
+        # than this asks its user to update. Raise it only when this server
+        # stopped working with older apps.
+        register_setting(SettingDef(
+            "apps.min_android_version", "Oldest Android app allowed", STRING, default="", group="Phone apps",
+            env="APPS_MIN_ANDROID_VERSION", validate=_version, help="A version like 1.4.0. Empty: any version.",
+        ))
+        register_setting(SettingDef(
+            "apps.min_ios_version", "Oldest iOS app allowed", STRING, default="", group="Phone apps",
+            env="APPS_MIN_IOS_VERSION", validate=_version, help="A version like 1.4.0. Empty: any version.",
+        ))
+
         # A typo in OIDC_PROVIDERS stops the app here, not at someone's sign-in.
         from platform_auth import sso
 
@@ -90,6 +102,13 @@ def _at_least(minimum: int, at_most: int | None = None):
             raise ValueError(f"{minimum} or more." if at_most is None else f"Between {minimum} and {at_most}.")
 
     return validate
+
+
+def _version(value):
+    import re
+
+    if value and not re.fullmatch(r"\d+(\.\d+){0,2}", str(value)):
+        raise ValueError("A version like 1.4.0, or empty.")
 
 
 def _export(user_id: str) -> dict:
@@ -111,7 +130,7 @@ def _export(user_id: str) -> dict:
         ],
         "sessions": [
             {"started_at": t.issued_at, "expires_at": t.expires_at, "revoked_at": t.revoked_at, "ip": t.ip,
-             "user_agent": t.user_agent}
+             "user_agent": t.user_agent, "client": t.client, "device_name": t.device_name}
             for t in RefreshToken.objects.filter(user_id=user_id).order_by("-issued_at")[:200]
         ],
     }

@@ -2,25 +2,26 @@
 across a reload" possible: the access token lives only in memory on the
 frontend (see platform-auth-frontend's tokenStore), so a page reload has
 none - this exchanges the httpOnly refresh cookie (which DOES survive a
-reload) for a new one.
+reload) for a new one. A phone app sends its refresh token in the body
+(`{"refresh_token": ...}`) instead and gets the next one back the same
+way (`views/_session.py`).
 """
 
 from datetime import UTC, datetime
 
-from django.conf import settings
 from rest_framework.views import APIView
 
 from core_api.errors import Unauthorized
 from platform_auth.models import RefreshToken
 from platform_auth.security import hash_refresh_token
-from platform_auth.views._session import issue_session_response
+from platform_auth.views._session import NATIVE_CLIENT, issue_session_response, raw_refresh_token
 
 
 class RefreshView(APIView):
     authentication_classes = []
 
     def post(self, request):
-        raw_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
+        raw_token = raw_refresh_token(request)
         if not raw_token:
             raise Unauthorized()
 
@@ -42,4 +43,6 @@ class RefreshView(APIView):
         if rows_updated == 0:
             raise Unauthorized()
 
-        return issue_session_response(token.user, request)
+        return issue_session_response(
+            token.user, request, native=token.client == NATIVE_CLIENT, device_name=token.device_name
+        )

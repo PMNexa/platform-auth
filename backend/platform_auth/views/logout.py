@@ -3,7 +3,8 @@ refresh token behind the httpOnly cookie and clears the cookie, so a
 later reload's boot refresh can't silently log back in. The access
 token isn't needed (or checked) - it may well have expired already -
 and a missing/unknown cookie is still a 204: the outcome the caller
-wants (no session) already holds.
+wants (no session) already holds. A phone app sends its refresh token in the body
+(`{"refresh_token": ...}`).
 """
 
 from datetime import UTC, datetime
@@ -15,13 +16,14 @@ from rest_framework.views import APIView
 from core_api.system import audit
 from platform_auth.models import RefreshToken
 from platform_auth.security import hash_refresh_token
+from platform_auth.views._session import raw_refresh_token
 
 
 class LogoutView(APIView):
     authentication_classes = []
 
     def post(self, request):
-        raw_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
+        raw_token = raw_refresh_token(request)
         if raw_token:
             token = RefreshToken.objects.filter(token_hash=hash_refresh_token(raw_token)).select_related("user").first()
             if token is not None:
