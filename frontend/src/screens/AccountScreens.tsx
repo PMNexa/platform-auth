@@ -4,6 +4,8 @@ import { forgotPassword, resendVerification, resetPassword, verifyEmail, type Se
 import { setAccessToken } from "../lib/auth/tokenStore";
 import { useAuthConfig } from "../auth/useAuthConfig";
 import AuthCard from "../pages/AuthCard";
+import { useT } from "platform-core";
+import messages from "./AccountScreens.messages";
 
 /**
  * The email-link screens - forgot password, set a new one (a reset or
@@ -17,8 +19,8 @@ interface CommonProps {
   footer?: ReactNode;
 }
 
-function message(thrown: unknown): string {
-  if (!(thrown instanceof ApiError)) return "Something went wrong. Please try again.";
+function message(thrown: unknown, fallback: string): string {
+  if (!(thrown instanceof ApiError)) return fallback;
   // A refused password comes back per field (`password`).
   const fields = (thrown.body as { field_errors?: Record<string, string[]> | null } | undefined)?.field_errors;
   return fields ? Object.values(fields).flat().join(" ") : thrown.message;
@@ -30,6 +32,7 @@ function toSession(response: { access_token: string; user: Session["user"] }): S
 }
 
 export function ForgotPasswordScreen({ title, footer, defaultEmail = "" }: CommonProps & { defaultEmail?: string }) {
+  const t = useT(messages);
   const [email, setEmail] = useState(defaultEmail);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -43,7 +46,7 @@ export function ForgotPasswordScreen({ title, footer, defaultEmail = "" }: Commo
       await forgotPassword(email.trim());
       setSent(true);
     } catch (thrown) {
-      setError(message(thrown));
+      setError(message(thrown, t("genericError")));
     } finally {
       setBusy(false);
     }
@@ -52,13 +55,11 @@ export function ForgotPasswordScreen({ title, footer, defaultEmail = "" }: Commo
   return (
     <AuthCard title={title} footer={footer}>
       {sent ? (
-        <p className="mb-0">
-          If an account uses <strong>{email}</strong>, a link to reset its password is on its way. It works for 2 hours.
-        </p>
+        <p className="mb-0">{t.rich("forgotSent", { email })}</p>
       ) : (
         <form onSubmit={submit} noValidate>
-          <p className="text-center mb-3">Forgot your password? We'll email you a link to choose a new one.</p>
-          <label className="form-label" htmlFor="forgot-email">Email</label>
+          <p className="text-center mb-3">{t("forgotIntro")}</p>
+          <label className="form-label" htmlFor="forgot-email">{t("email")}</label>
           <input
             id="forgot-email"
             type="email"
@@ -71,7 +72,7 @@ export function ForgotPasswordScreen({ title, footer, defaultEmail = "" }: Commo
           {error && <div className="alert alert-danger" role="alert">{error}</div>}
           <div className="d-grid">
             <button type="submit" className="btn btn-primary btn-sm" disabled={busy || !email.trim()}>
-              {busy ? "Sending..." : "Email me a link"}
+              {busy ? t("sending") : t("emailMeLink")}
             </button>
           </div>
         </form>
@@ -86,6 +87,7 @@ export function ResetPasswordScreen({
   token,
   onSuccess,
 }: CommonProps & { token: string; onSuccess: (session: Session) => void }) {
+  const t = useT(messages);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -101,7 +103,7 @@ export function ResetPasswordScreen({
     try {
       onSuccess(toSession(await resetPassword(token, password)));
     } catch (thrown) {
-      setError(message(thrown));
+      setError(message(thrown, t("genericError")));
       setBusy(false);
     }
   }
@@ -109,8 +111,8 @@ export function ResetPasswordScreen({
   return (
     <AuthCard title={title} footer={footer}>
       <form onSubmit={submit} noValidate>
-        <p className="text-center mb-3">Choose a password for your account.</p>
-        <label className="form-label" htmlFor="reset-password">New password</label>
+        <p className="text-center mb-3">{t("resetIntro")}</p>
+        <label className="form-label" htmlFor="reset-password">{t("newPassword")}</label>
         <input
           id="reset-password"
           type="password"
@@ -119,8 +121,8 @@ export function ResetPasswordScreen({
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        <small className="form-hint mb-3">At least {minLength} characters.</small>
-        <label className="form-label" htmlFor="reset-confirm">Repeat it</label>
+        <small className="form-hint mb-3">{t("minLength", { n: minLength })}</small>
+        <label className="form-label" htmlFor="reset-confirm">{t("repeatIt")}</label>
         <input
           id="reset-confirm"
           type="password"
@@ -129,11 +131,11 @@ export function ResetPasswordScreen({
           value={confirm}
           onChange={(event) => setConfirm(event.target.value)}
         />
-        {mismatch && <div className="invalid-feedback d-block mb-2">The passwords don't match.</div>}
+        {mismatch && <div className="invalid-feedback d-block mb-2">{t("mismatch")}</div>}
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         <div className="d-grid">
           <button type="submit" className="btn btn-primary btn-sm" disabled={busy || password.length < minLength || confirm !== password}>
-            {busy ? "Saving..." : "Save password and sign in"}
+            {busy ? t("saving") : t("saveAndSignIn")}
           </button>
         </div>
       </form>
@@ -147,6 +149,7 @@ export function VerifyEmailScreen({
   token,
   onSuccess,
 }: CommonProps & { token: string; onSuccess: (session: Session) => void }) {
+  const t = useT(messages);
   const [error, setError] = useState<string | null>(null);
   // StrictMode runs effects twice in dev - verify once.
   const started = useRef(false);
@@ -156,15 +159,15 @@ export function VerifyEmailScreen({
     started.current = true;
     verifyEmail(token)
       .then((response) => onSuccess(toSession(response)))
-      .catch((thrown: unknown) => setError(message(thrown)));
-  }, [token, onSuccess]);
+      .catch((thrown: unknown) => setError(message(thrown, t("genericError"))));
+  }, [token, onSuccess, t]);
 
   return (
     <AuthCard title={title} footer={footer}>
       {error ? (
         <div className="alert alert-danger mb-0" role="alert">{error}</div>
       ) : (
-        <p className="text-center mb-0">Confirming your email…</p>
+        <p className="text-center mb-0">{t("confirming")}</p>
       )}
     </AuthCard>
   );
@@ -172,12 +175,11 @@ export function VerifyEmailScreen({
 
 /** After a signup that needs confirming: where the link went, and a way to send another. */
 export function CheckEmailNotice({ email, next }: { email: string; next?: string }) {
+  const t = useT(messages);
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   return (
     <div>
-      <p>
-        We sent a link to <strong>{email}</strong>. Open it to confirm your address and sign in - it works for 7 days.
-      </p>
+      <p>{t.rich("checkEmail", { email })}</p>
       <button
         type="button"
         className="btn btn-link btn-sm p-0"
@@ -187,7 +189,7 @@ export function CheckEmailNotice({ email, next }: { email: string; next?: string
           void resendVerification(email, next).finally(() => setState("sent"));
         }}
       >
-        {state === "sent" ? "Sent again" : "Send it again"}
+        {state === "sent" ? t("sentAgain") : t("sendAgain")}
       </button>
     </div>
   );

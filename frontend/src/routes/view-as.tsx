@@ -3,10 +3,14 @@ import { useNavigate } from "react-router";
 import { startImpersonation } from "../session";
 import AuthCard from "../pages/AuthCard";
 import { useAuthScreenConfig } from "../screens/AuthScreenConfig";
+import { useT } from "platform-core";
+import messages from "./messages";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "View as user" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("viewAsUser") }];
 }
 
 /**
@@ -16,6 +20,7 @@ export function meta() {
  */
 export default function ViewAsRoute() {
   const navigate = useNavigate();
+  const t = useT(messages);
   const { title } = useAuthScreenConfig();
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
@@ -27,17 +32,17 @@ export default function ViewAsRoute() {
     window.history.replaceState(null, "", window.location.pathname);
     if (!token) {
       // oxlint-disable-next-line react/set-state-in-effect
-      setError("This link has no token - open it from the user's page.");
+      setError(t("viewAsNoToken"));
       return;
     }
     startImpersonation(token)
       .then(() => navigate("/", { replace: true }))
-      .catch(() => setError("This view has expired - start it again from the user's page."));
-  }, [navigate]);
+      .catch(() => setError(t("viewAsExpired")));
+  }, [navigate, t]);
 
   return (
     <AuthCard title={title}>
-      {error ? <div className="alert alert-danger mb-0">{error}</div> : <p className="text-center mb-0">Opening the read-only view…</p>}
+      {error ? <div className="alert alert-danger mb-0">{error}</div> : <p className="text-center mb-0">{t("viewAsOpening")}</p>}
     </AuthCard>
   );
 }

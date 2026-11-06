@@ -2,6 +2,8 @@ import { useState, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Signup from "../pages/Signup";
 import type { Session } from "../lib/api/auth";
+import { useT } from "platform-core";
+import messages from "./AccountScreens.messages";
 
 /**
  * This package's exported signup screen (see src/index.ts) - self-
@@ -9,14 +11,13 @@ import type { Session } from "../lib/api/auth";
  * AuthProvider, no react-router dependency (see Signup's own docstring).
  */
 function SignupScreenInner({ onSuccess, title, setup, footer, defaultEmail, next }: SignupScreenProps) {
+  const t = useT(messages);
   const { user } = useAuth();
   const [justSignedUp, setJustSignedUp] = useState(false);
 
   if (user && justSignedUp) {
     return (
-      <p>
-        Account created for {user.name} ({user.email}).
-      </p>
+      <p>{t("accountCreated", { name: user.name, email: user.email })}</p>
     );
   }
 

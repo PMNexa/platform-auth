@@ -1,17 +1,21 @@
 import { useState, type FormEvent } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle, FormCheck, FormControl, FormLabel } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, FormCheck, FormControl, FormLabel, LanguageSelect, useT, type Locale } from "platform-core";
 import { changeMyPassword, deleteMyAccount, exportMyData } from "../lib/api/auth";
+import messages from "./MyAccountScreen.messages";
 import { ApiError } from "../lib/api/client";
 import { useAuthConfig } from "../auth/useAuthConfig";
-import { clearSession, getSession, setSession } from "../session";
+import { clearSession, getSession, setSession, setUserLanguage } from "../session";
 
 /**
- * The signed-in user's own account page: download everything the
+ * The signed-in user's own account page: pick the UI language (saved on
+ * the account), download everything the
  * instance holds about them (JSON), change their password, and delete
  * their account with all they own. `accessToken` is the host's session token.
  */
 export default function MyAccountScreen({ accessToken, onDeleted }: { accessToken: string; onDeleted?: () => void }) {
+  const t = useT(messages);
   const user = getSession()?.user;
+  const [languageError, setLanguageError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,8 +31,8 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
   async function changePassword(event: FormEvent) {
     event.preventDefault();
     setPasswordChanged(false);
-    if (newPassword.length < minLength) return setPasswordError(`The new password must be at least ${minLength} characters.`);
-    if (newPassword !== repeatPassword) return setPasswordError("The new passwords don't match.");
+    if (newPassword.length < minLength) return setPasswordError(t("tooShort", { n: minLength }));
+    if (newPassword !== repeatPassword) return setPasswordError(t("mismatch"));
     setBusy(true);
     setPasswordError(null);
     try {
@@ -79,21 +83,41 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
     }
   }
 
+  async function saveLanguage(language: Locale) {
+    setLanguageError(null);
+    try {
+      await setUserLanguage(language);
+    } catch (thrown) {
+      setLanguageError(t("languageSaveFailed", { error: thrown instanceof ApiError ? thrown.message : String(thrown) }));
+    }
+  }
+
   return (
     <div className="row g-3">
       <div className="col-12">
         <Card>
           <CardHeader>
-            <CardTitle>Your data</CardTitle>
+            <CardTitle>{t("languageTitle")}</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <p className="text-secondary">{t("languageHint")}</p>
+            <LanguageSelect id="account-language" className="form-select w-auto" onChange={(language) => void saveLanguage(language)} />
+            {languageError && <div className="alert alert-danger mt-3" role="alert">{languageError}</div>}
+          </CardBody>
+        </Card>
+      </div>
+      <div className="col-12">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("dataTitle")}</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-secondary">
-              {user ? `${user.name} · ${user.email}. ` : ""}Download everything this instance holds about you - your
-              goals with their metrics and check-ins, cycles, comments, organizations, sign-ins and AI access - as a JSON
-              file.
+              {user ? `${user.name} · ${user.email}. ` : ""}
+              {t("dataIntro")}
             </p>
             <Button variant="primary" disabled={busy} onClick={() => void download()}>
-              Download my data
+              {t("download")}
             </Button>
           </CardBody>
         </Card>
@@ -101,12 +125,12 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
       <div className="col-12">
         <Card>
           <CardHeader>
-            <CardTitle>Change password</CardTitle>
+            <CardTitle>{t("passwordTitle")}</CardTitle>
           </CardHeader>
           <CardBody>
             <form onSubmit={changePassword}>
-              <p className="text-secondary">Changing your password logs you out everywhere else.</p>
-              <FormLabel htmlFor="current-password">Current password</FormLabel>
+              <p className="text-secondary">{t("passwordIntro")}</p>
+              <FormLabel htmlFor="current-password">{t("currentPassword")}</FormLabel>
               <FormControl
                 id="current-password"
                 type="password"
@@ -115,7 +139,7 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
               />
-              <FormLabel htmlFor="new-password">New password</FormLabel>
+              <FormLabel htmlFor="new-password">{t("newPassword")}</FormLabel>
               <FormControl
                 id="new-password"
                 type="password"
@@ -123,8 +147,8 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
-              <small className="form-hint mb-2">At least {minLength} characters.</small>
-              <FormLabel htmlFor="repeat-password">Repeat new password</FormLabel>
+              <small className="form-hint mb-2">{t("minLength", { n: minLength })}</small>
+              <FormLabel htmlFor="repeat-password">{t("repeatPassword")}</FormLabel>
               <FormControl
                 id="repeat-password"
                 type="password"
@@ -134,9 +158,9 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 onChange={(event) => setRepeatPassword(event.target.value)}
               />
               {passwordError && <div className="alert alert-danger" role="alert">{passwordError}</div>}
-              {passwordChanged && <div className="alert alert-success" role="status">Password changed.</div>}
+              {passwordChanged && <div className="alert alert-success" role="status">{t("passwordChanged")}</div>}
               <Button type="submit" variant="primary" disabled={busy || !currentPassword || !newPassword || !repeatPassword}>
-                Change password
+                {t("passwordTitle")}
               </Button>
             </form>
           </CardBody>
@@ -145,15 +169,14 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
       <div className="col-12">
         <Card className="border-danger">
           <CardHeader>
-            <CardTitle>Delete my account</CardTitle>
+            <CardTitle>{t("deleteTitle")}</CardTitle>
           </CardHeader>
           <CardBody>
             <form onSubmit={remove}>
               <p className="text-secondary">
-                Deletes your account, your goals and personal cycles, and your comments. Organizations you're the only
-                member of are deleted; in others, the longest-standing admin becomes owner.
+                {t("deleteIntro")}
               </p>
-              <FormLabel htmlFor="delete-password">Your password</FormLabel>
+              <FormLabel htmlFor="delete-password">{t("yourPassword")}</FormLabel>
               <FormControl
                 id="delete-password"
                 type="password"
@@ -163,12 +186,12 @@ export default function MyAccountScreen({ accessToken, onDeleted }: { accessToke
                 onChange={(event) => setPassword(event.target.value)}
               />
               <FormCheck
-                label="I understand this can't be undone."
+                label={t("understand")}
                 checked={confirm}
                 onChange={(event) => setConfirm(event.target.checked)}
               />
               <Button type="submit" variant="danger" disabled={busy || !confirm || !password}>
-                Delete my account
+                {t("deleteTitle")}
               </Button>
             </form>
           </CardBody>

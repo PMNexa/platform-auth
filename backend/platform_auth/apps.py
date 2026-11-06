@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 from django.db.models.signals import post_migrate, post_save
+from django.utils.translation import gettext
 
 
 class PlatformAuthConfig(AppConfig):
@@ -99,7 +100,8 @@ class PlatformAuthConfig(AppConfig):
 def _at_least(minimum: int, at_most: int | None = None):
     def validate(value):
         if int(value) < minimum or (at_most is not None and int(value) > at_most):
-            raise ValueError(f"{minimum} or more." if at_most is None else f"Between {minimum} and {at_most}.")
+            raise ValueError(gettext("{minimum} or more.").format(minimum=minimum) if at_most is None
+                             else gettext("Between {minimum} and {maximum}.").format(minimum=minimum, maximum=at_most))
 
     return validate
 

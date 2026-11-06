@@ -15,6 +15,7 @@ from datetime import timedelta
 
 from django.db.models import F
 from django.utils import timezone
+from django.utils.translation import gettext
 
 from core_api.errors import ApiError
 from core_api.system import audit, get_setting
@@ -25,8 +26,10 @@ def locked_error(until) -> ApiError:
     minutes = max(math.ceil((until - timezone.now()).total_seconds() / 60), 1)
     return ApiError(
         403, "account_locked",
-        f"Too many failed attempts - this account is locked for {minutes} more minute{'s' if minutes != 1 else ''}. "
-        "Resetting your password unlocks it.",
+        gettext("Too many failed attempts - this account is locked for 1 more minute. Resetting your password unlocks it.")
+        if minutes == 1 else
+        gettext("Too many failed attempts - this account is locked for {minutes} more minutes. "
+                "Resetting your password unlocks it.").format(minutes=minutes),
     )
 
 

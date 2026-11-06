@@ -84,6 +84,18 @@ class RBACTests(TestCase):
     def test_me_lists_permissions(self):
         self.assertEqual(self.client_for(self.admin).get("/api/v1/auth/me").json()["permissions"], ["*"])
 
+    @override_settings(LANGUAGES=[("en", "English"), ("vi", "Tiếng Việt")])
+    def test_me_saves_the_language(self):
+        client = self.client_for(self.admin)
+        self.assertEqual(client.get("/api/v1/auth/me").json()["language"], "")
+        response = client.patch("/api/v1/auth/me", {"language": "vi"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["language"], "vi")
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.language, "vi")
+        self.assertEqual(client.patch("/api/v1/auth/me", {"language": "xx"}, format="json").status_code, 400)
+        self.assertEqual(client.patch("/api/v1/auth/me", {"language": ""}, format="json").json()["language"], "")
+
 
 @override_settings(CORE_API_ACCESS_POLICY="platform_auth.rbac.policy.RBACPolicy")
 class SetupTests(TestCase):
@@ -101,6 +113,15 @@ class SetupTests(TestCase):
         self.assertTrue(RoleAssignment.objects.filter(user=user, role__name="Admin", scope_id=None).exists())
         self.assertTrue(Permission.objects.filter(codename="roles.view").exists())
         self.assertFalse(self.client.get("/api/v1/auth/setup").json()["required"])
+
+    @override_settings(LANGUAGES=[("en", "English"), ("vi", "Tiếng Việt")], LANGUAGE_COOKIE_NAME="gn_lang")
+    def test_new_account_starts_in_the_page_language(self):
+        """Needs the host's LocaleMiddleware (apps/main has it)."""
+        if "django.middleware.locale.LocaleMiddleware" not in settings.MIDDLEWARE:
+            self.skipTest("no LocaleMiddleware in this host")
+        self.client.cookies["gn_lang"] = "vi"
+        self.client.post("/api/v1/auth/setup", self.body, format="json")
+        self.assertEqual(User.objects.get(email="ada@t.io").language, "vi")
 
     def test_setup_only_once(self):
         self.client.post("/api/v1/auth/setup", self.body, format="json")

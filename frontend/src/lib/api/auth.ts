@@ -4,6 +4,8 @@ export interface UserSummary {
   id: string;
   name: string;
   email: string;
+  /** UI language they picked ("en", "vi"); blank = not picked. */
+  language?: string;
   /** Set while an admin is viewing as this user ("view as", read-only). */
   impersonated_by?: { id: string; name?: string; email?: string };
 }
@@ -98,6 +100,15 @@ export async function setup(name: string, email: string, password: string): Prom
 
 export async function me(): Promise<UserSummary> {
   return apiRequest<UserSummary>("/api/v1/auth/me");
+}
+
+/** Saves the signed-in user's own preferences (the UI language). */
+export async function updateMe(accessToken: string, changes: { language?: string }): Promise<UserSummary> {
+  return apiRequest<UserSummary>("/api/v1/auth/me", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    data: changes,
+  });
 }
 
 // The backend ROTATES the refresh token on every call (single-use) - two

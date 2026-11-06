@@ -1,4 +1,5 @@
-import type { NavEntry } from "platform-core";
+import { translate, type NavEntry } from "platform-core";
+import messages from "./rbacNav.messages";
 
 /** Tabler Icons "shield-lock" (outline, MIT) - inlined, no icon font. */
 function AccessIcon() {
@@ -29,18 +30,19 @@ function AccessIcon() {
  * `createRbacRoutes(basePath)` so the links point where the pages are
  * mounted. Each link carries the `permission` it needs; run the host's
  * list through `filterNavByPermissions` and the group disappears for a
- * user who can open neither.
+ * user who can open neither. Labels are in the current language: call it
+ * at render time (the host rebuilds its list on every render).
  */
 export function createRbacNavItems(basePath: string): NavEntry[] {
   const prefix = basePath.replace(/^\/+|\/+$/g, "");
   const path = (resource: string) => `/${prefix ? `${prefix}/` : ""}${resource}`;
   return [
     {
-      label: "Access control",
+      label: translate(messages, "accessControl"),
       icon: <AccessIcon />,
       children: [
-        { label: "Users", to: path("users"), permission: "users.view" },
-        { label: "Roles", to: path("roles"), permission: "roles.view" },
+        { label: translate(messages, "users"), to: path("users"), permission: "users.view" },
+        { label: translate(messages, "roles"), to: path("roles"), permission: "roles.view" },
       ],
     },
   ];

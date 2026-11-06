@@ -1,4 +1,5 @@
-import { logout as logoutRequest, me, refresh } from "./lib/api/auth";
+import { applyUserLocale, setLocale, type Locale } from "platform-core";
+import { logout as logoutRequest, me, refresh, updateMe } from "./lib/api/auth";
 import { setAccessToken } from "./lib/auth/tokenStore";
 import type { Session } from "./lib/api/auth";
 import { ApiError } from "./lib/api/client";
@@ -48,6 +49,9 @@ export function isSessionInitialized(): boolean {
 
 export function setSession(next: Session): void {
   session = next;
+  // The language saved on the account follows them to every browser
+  // (not while an admin views as them - that's the admin's browser).
+  if (!next.user.impersonated_by) applyUserLocale(next.user.language);
   scheduleRefresh(next.accessToken);
   startKeepAlive();
   // A fresh login/signup is definitive - no need to wait for the boot-
@@ -260,4 +264,20 @@ export function endImpersonation(): void {
   clearStoredImpersonation();
   impersonating = false;
   window.location.assign("/");
+}
+
+/**
+ * Switches the UI language and, when signed in (and not viewing as
+ * someone), saves it on the account so every device follows. The switch
+ * happens at once; a failed save rejects (the UI stays switched).
+ */
+export async function setUserLanguage(language: Locale): Promise<void> {
+  setLocale(language);
+  const current = session;
+  if (!current || current.user.impersonated_by) return;
+  const saved = await updateMe(current.accessToken, { language });
+  if (session === current) {
+    session = { ...current, user: { ...current.user, ...saved } };
+    notify();
+  }
 }

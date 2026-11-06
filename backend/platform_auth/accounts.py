@@ -20,6 +20,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext
 
 from core_api.system import email_configured, get_setting, send_email
 from platform_auth.models import RoleAssignment, User
@@ -36,7 +37,7 @@ def password_login_required() -> None:
 
     if not sso.password_login_enabled():
         raise ApiError(403, "password_login_disabled",
-                       f"Password login is turned off here - sign in with {sso.label()} instead.")
+                       gettext("Password login is turned off here - sign in with {provider} instead.").format(provider=sso.label()))
 
 
 def verification_required() -> bool:

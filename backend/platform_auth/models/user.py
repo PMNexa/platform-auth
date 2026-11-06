@@ -20,7 +20,8 @@ class User(TimestampedModel):
     an unverified account can't log in while the instance requires
     verification (`accounts.verification_required`). A password hash of
     `UNUSABLE_PASSWORD` (an invited account that hasn't set one) never
-    matches. `failed_login_count` counts wrong passwords in a row;
+    matches. `language` is the UI language they picked
+    (`settings.LANGUAGES` codes, blank = not picked). `failed_login_count` counts wrong passwords in a row;
     reaching `auth.lockout_attempts` sets `locked_until` (`lockout.py`).
     """
 
@@ -33,6 +34,9 @@ class User(TimestampedModel):
     last_login_at = models.DateTimeField(null=True, blank=True)
     failed_login_count = models.PositiveIntegerField(default=0, db_default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+    #: UI language ("en", "vi"); blank = the browser's. Followed by the
+    #: web app on sign-in, and by mail sent to the user where translated.
+    language = models.CharField(max_length=10, blank=True, default="", db_default="")
 
     class Meta:
         db_table = "user"

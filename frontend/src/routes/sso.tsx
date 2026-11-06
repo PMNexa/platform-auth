@@ -2,12 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import AuthCard from "../pages/AuthCard";
 import { useAuthScreenConfig } from "../screens/AuthScreenConfig";
+import { useT } from "platform-core";
+import messages from "./messages";
 import { refreshSession, setSession } from "../session";
 import { nextPath, siblingPath } from "./redirect";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Signing in" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("signingIn") }];
 }
 
 /**
@@ -19,6 +23,7 @@ export default function SsoRoute() {
   const navigate = useNavigate();
   const location = useLocation();
   const [search] = useSearchParams();
+  const t = useT(messages);
   const { title } = useAuthScreenConfig();
   const [failed, setFailed] = useState(false);
   // StrictMode runs effects twice in dev - `refreshSession` shares one request, navigate once.
@@ -36,11 +41,11 @@ export default function SsoRoute() {
   }, [navigate, search]);
 
   return (
-    <AuthCard title={title} footer={failed ? <Link to={siblingPath(location, "login")}>Back to log in</Link> : undefined}>
+    <AuthCard title={title} footer={failed ? <Link to={siblingPath(location, "login")}>{t("backToLogin")}</Link> : undefined}>
       {failed ? (
-        <div className="alert alert-danger mb-0" role="alert">Signing in didn't finish. Try again.</div>
+        <div className="alert alert-danger mb-0" role="alert">{t("ssoFailed")}</div>
       ) : (
-        <p className="text-center mb-0">Signing you in…</p>
+        <p className="text-center mb-0">{t("ssoSigningIn")}</p>
       )}
     </AuthCard>
   );

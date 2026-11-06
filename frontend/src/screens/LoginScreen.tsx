@@ -2,6 +2,8 @@ import { useState, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import Login from "../pages/Login";
 import type { Session } from "../lib/api/auth";
+import { useT } from "platform-core";
+import messages from "./AccountScreens.messages";
 
 /**
  * This package's exported login screen (see src/index.ts) - self-
@@ -12,14 +14,13 @@ import type { Session } from "../lib/api/auth";
  * docstring); this is a screen, not a router.
  */
 function LoginScreenInner({ onSuccess, title, footer, forgotPassword, next, ssoError }: LoginScreenProps) {
+  const t = useT(messages);
   const { user } = useAuth();
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   if (user && justLoggedIn) {
     return (
-      <p>
-        Signed in as {user.name} ({user.email}).
-      </p>
+      <p>{t("signedInAs", { name: user.name, email: user.email })}</p>
     );
   }
 
