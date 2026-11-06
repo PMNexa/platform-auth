@@ -46,6 +46,7 @@ export {
   logout,
   refreshSession,
   setSession,
+  setUserLanguage,
   subscribeSession,
 } from "./session";
 

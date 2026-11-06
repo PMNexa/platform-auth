@@ -24,6 +24,7 @@ from platform_auth.models import User
 from platform_auth.passwords import check_password
 from platform_auth.security import hash_password
 from platform_auth.serializers import SignupSerializer
+from platform_auth.views.me import request_language
 from platform_auth.throttling import SignupRateThrottle
 from platform_auth.views._session import issue_session_response
 from platform_auth.views.setup import setup_required
@@ -72,6 +73,7 @@ class SignupView(APIView):
                 email=email,
                 password_hash=hash_password(password),
                 email_verified_at=None if verify else timezone.now(),
+                language=request_language(request),
             )
         except IntegrityError as exc:
             raise ConflictError("email_taken", "An account with this email already exists.") from exc

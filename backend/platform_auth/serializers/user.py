@@ -5,3 +5,4 @@ class UserSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     email = serializers.EmailField()
+    language = serializers.CharField(help_text="UI language the user picked (e.g. \"en\", \"vi\"); blank = not picked.")
