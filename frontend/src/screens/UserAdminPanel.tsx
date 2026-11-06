@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle, CopyButton } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, CopyButton, formatDateTime, useT, type Locale, type Translate } from "platform-core";
+import messages from "./UserAdminPanel.messages";
 import { usersApi, type AdminUser, type UserSessions } from "../lib/api/admin";
 import { ApiError } from "../lib/api/client";
 
@@ -14,19 +15,17 @@ export interface UserAdminPanelProps {
   viewAsPath?: string;
 }
 
-const WHEN = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
-
-function when(iso: string | null): string {
-  return iso ? WHEN.format(new Date(iso)) : "—";
+function when(iso: string | null, locale: Locale): string {
+  return iso ? formatDateTime(iso, { dateStyle: "medium", timeStyle: "short" }, locale) : "—";
 }
 
-function browser(userAgent: string): string {
-  if (!userAgent) return "Unknown device";
+function browser(userAgent: string, t: Translate<(typeof messages)["en"]>): string {
+  if (!userAgent) return t("unknownDevice");
   const name = /Edg\//.test(userAgent) ? "Edge" : /Chrome\//.test(userAgent) ? "Chrome" : /Firefox\//.test(userAgent)
-    ? "Firefox" : /Safari\//.test(userAgent) ? "Safari" : /curl|python|axios|node/i.test(userAgent) ? "Script" : "Browser";
+    ? "Firefox" : /Safari\//.test(userAgent) ? "Safari" : /curl|python|axios|node/i.test(userAgent) ? t("script") : t("browser");
   const os = /Mac OS X/.test(userAgent) ? "macOS" : /Windows/.test(userAgent) ? "Windows" : /Android/.test(userAgent)
     ? "Android" : /iPhone|iPad/.test(userAgent) ? "iOS" : /Linux/.test(userAgent) ? "Linux" : "";
-  return os ? `${name} on ${os}` : name;
+  return os ? t("browserOn", { browser: name, os }) : name;
 }
 
 function message(thrown: unknown): string {
@@ -47,6 +46,8 @@ function message(thrown: unknown): string {
  * backend guards yourself and the last admin, and audits each action.
  */
 function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath = "/auth/view-as" }: UserAdminPanelProps) {
+  const t = useT(messages);
+  const at = (iso: string | null) => when(iso, t.locale);
   const api = useMemo(() => usersApi(accessToken), [accessToken]);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [sessions, setSessions] = useState<UserSessions | null>(null);
@@ -95,7 +96,7 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
   if (!user) {
     return (
       <Card className="mt-3">
-        <CardBody>{error ? <div className="text-danger">{error}</div> : <div className="text-secondary">Loading…</div>}</CardBody>
+        <CardBody>{error ? <div className="text-danger">{error}</div> : <div className="text-secondary">{t("loading")}</div>}</CardBody>
       </Card>
     );
   }
@@ -107,45 +108,45 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
     <div className="d-flex flex-column gap-3 mt-3">
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>{t("account")}</CardTitle>
           <span className={`badge ms-2 ${user.is_active ? "bg-green-lt" : "bg-red-lt"}`}>
-            {user.is_active ? "Active" : "Disabled"}
+            {user.is_active ? t("active") : t("disabled")}
           </span>
-          {!user.email_verified_at && <span className="badge bg-yellow-lt ms-2">Email not confirmed</span>}
+          {!user.email_verified_at && <span className="badge bg-yellow-lt ms-2">{t("emailNotConfirmed")}</span>}
           {locked && (
-            <span className="badge bg-orange-lt ms-2" title="Too many wrong passwords in a row">
-              Locked until {when(user.locked_until)}
+            <span className="badge bg-orange-lt ms-2" title={t("lockedTitle")}>
+              {t("lockedUntil", { when: at(user.locked_until) })}
             </span>
           )}
         </CardHeader>
         <CardBody>
           <div className="row mb-3">
             <div className="col-6 col-md-4">
-              <div className="text-secondary small">Last login</div>
-              {when(user.last_login_at)}
+              <div className="text-secondary small">{t("lastLogin")}</div>
+              {at(user.last_login_at)}
             </div>
             <div className="col-6 col-md-4">
-              <div className="text-secondary small">Email confirmed</div>
-              {when(user.email_verified_at)}
+              <div className="text-secondary small">{t("emailConfirmed")}</div>
+              {at(user.email_verified_at)}
             </div>
             <div className="col-6 col-md-4">
-              <div className="text-secondary small">Joined</div>
-              {when(user.created_at)}
+              <div className="text-secondary small">{t("joined")}</div>
+              {at(user.created_at)}
             </div>
           </div>
           <div className="d-flex flex-wrap gap-2">
             {user.is_active ? (
-              <Button variant="warning" outline disabled={busy} onClick={() => void run(() => api.disable(userId), "Disabled - they were signed out everywhere.")}>
-                Disable account
+              <Button variant="warning" outline disabled={busy} onClick={() => void run(() => api.disable(userId), t("disableDone"))}>
+                {t("disable")}
               </Button>
             ) : (
-              <Button variant="success" outline disabled={busy} onClick={() => void run(() => api.enable(userId), "Enabled.")}>
-                Enable account
+              <Button variant="success" outline disabled={busy} onClick={() => void run(() => api.enable(userId), t("enableDone"))}>
+                {t("enable")}
               </Button>
             )}
             {locked && (
-              <Button variant="warning" outline disabled={busy} onClick={() => void run(() => api.unlock(userId), "Unlocked - they can log in again.")}>
-                Unlock
+              <Button variant="warning" outline disabled={busy} onClick={() => void run(() => api.unlock(userId), t("unlockDone"))}>
+                {t("unlock")}
               </Button>
             )}
             <Button
@@ -154,13 +155,13 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
               disabled={busy || !user.is_active}
               onClick={() => void run(async () => setResetUrl((await api.resetLink(userId)).url))}
             >
-              Create password link
+              {t("passwordLink")}
             </Button>
             <Button
               variant="secondary"
               outline
               disabled={busy || !user.is_active}
-              title="Opens a read-only view of the app as this user, for 15 minutes, in a new tab"
+              title={t("viewAsTitle")}
               onClick={() =>
                 void run(async () => {
                   // Opened first (a popup blocker allows it during the click), filled in once the token is back.
@@ -172,7 +173,7 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
                 })
               }
             >
-              View as {user.name.split(" ")[0]}
+              {t("viewAs", { name: user.name.split(" ")[0] })}
             </Button>
             <Button
               variant="secondary"
@@ -189,14 +190,14 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
                 })
               }
             >
-              Export data
+              {t("exportData")}
             </Button>
           </div>
           {resetUrl && (
             <div className="mt-3">
-              <div className="small text-secondary mb-1">Send this link to {user.name} - it lets them choose a new password, once, within 3 days.</div>
+              <div className="small text-secondary mb-1">{t("resetLinkHint", { name: user.name })}</div>
               <div className="input-group">
-                <input className="form-control form-control-sm font-monospace" readOnly value={resetUrl} aria-label="Password link" />
+                <input className="form-control form-control-sm font-monospace" readOnly value={resetUrl} aria-label={t("passwordLinkLabel")} />
                 <CopyButton text={resetUrl} />
               </div>
             </div>
@@ -208,15 +209,15 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
 
       <Card>
         <CardHeader>
-          <CardTitle>Where they're signed in</CardTitle>
+          <CardTitle>{t("signedInTitle")}</CardTitle>
           <div className="ms-auto">
             <Button
               variant="danger"
               outline
               disabled={busy || ((sessions?.logins.length ?? 0) === 0 && otherCount === 0)}
-              onClick={() => void run(() => api.revokeSessions(userId), "Signed out everywhere.")}
+              onClick={() => void run(() => api.revokeSessions(userId), t("signOutDone"))}
             >
-              Sign out everywhere
+              {t("signOutEverywhere")}
             </Button>
           </div>
         </CardHeader>
@@ -224,16 +225,16 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
           <table className="table table-vcenter card-table">
             <thead>
               <tr>
-                <th>Session</th>
-                <th>Started</th>
-                <th>From</th>
+                <th>{t("session")}</th>
+                <th>{t("started")}</th>
+                <th>{t("from")}</th>
               </tr>
             </thead>
             <tbody>
               {sessions?.logins.map((login) => (
                 <tr key={login.id}>
-                  <td>{login.client === "native" ? `App${login.device_name ? ` on ${login.device_name}` : ""}` : browser(login.user_agent)}</td>
-                  <td>{when(login.started_at)}</td>
+                  <td>{login.client === "native" ? (login.device_name ? t("appOn", { device: login.device_name }) : t("app")) : browser(login.user_agent, t)}</td>
+                  <td>{at(login.started_at)}</td>
                   <td className="text-secondary">{login.ip || "—"}</td>
                 </tr>
               ))}
@@ -243,14 +244,14 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
                     <td>
                       {item.label} <span className="badge bg-secondary-lt ms-1">{group.label}</span>
                     </td>
-                    <td>{when(item.created_at)}</td>
-                    <td className="text-secondary">Last used {when(item.last_used_at)}</td>
+                    <td>{at(item.created_at)}</td>
+                    <td className="text-secondary">{t("lastUsed", { when: at(item.last_used_at) })}</td>
                   </tr>
                 )),
               )}
               {(sessions?.logins.length ?? 0) === 0 && otherCount === 0 && (
                 <tr>
-                  <td colSpan={3} className="text-secondary">Not signed in anywhere.</td>
+                  <td colSpan={3} className="text-secondary">{t("notSignedIn")}</td>
                 </tr>
               )}
             </tbody>
@@ -260,26 +261,26 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
 
       <Card className="border-danger">
         <CardHeader>
-          <CardTitle>Delete account</CardTitle>
+          <CardTitle>{t("deleteTitle")}</CardTitle>
         </CardHeader>
         <CardBody>
-          <label className="form-label" htmlFor="delete-transfer">What happens to their goals, cycles and organizations</label>
+          <label className="form-label" htmlFor="delete-transfer">{t("transferLabel")}</label>
           <select id="delete-transfer" className="form-select mb-2" value={transferTo} onChange={(event) => setTransferTo(event.target.value)}>
-            <option value="">Delete them too</option>
+            <option value="">{t("deleteThemToo")}</option>
             {others.map((other) => (
               <option key={other.id} value={other.id}>
-                Give them to {other.name} ({other.email})
+                {t("giveTo", { name: other.name, email: other.email })}
               </option>
             ))}
           </select>
           <small className="form-hint mb-3">
             {transferTo
-              ? "They take over everything this user owns, including their place in each organization."
-              : "Their goals and personal cycles are erased; organizations nobody else is in are deleted."}
+              ? t("transferHint")
+              : t("eraseHint")}
           </small>
           <label className="form-check">
             <input className="form-check-input" type="checkbox" checked={confirmDelete} onChange={(event) => setConfirmDelete(event.target.checked)} />
-            <span className="form-check-label">I understand this can't be undone.</span>
+            <span className="form-check-label">{t("understand")}</span>
           </label>
           <Button
             variant="danger"
@@ -291,7 +292,7 @@ function UserAdminPanel({ accessToken, userId, onChanged, onDeleted, viewAsPath 
               })
             }
           >
-            Delete {user.name}
+            {t("deleteUser", { name: user.name })}
           </Button>
         </CardBody>
       </Card>

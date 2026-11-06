@@ -1,24 +1,15 @@
 import { API_BASE_URL } from "../lib/api/client";
 import type { SsoProvider } from "../lib/api/auth";
+import { translator, useT, type Locale } from "platform-core";
+import messages from "./SsoButton.messages";
 
 /** Why a single sign-on attempt came back to the login page (`?sso_error=<code>`, set by the backend). */
-const SSO_ERRORS: Record<string, string> = {
-  expired: "That sign-in took too long or was started in another browser. Try again.",
-  denied: "The sign-in was cancelled.",
-  email_unverified: "Your email address isn't verified with the sign-in provider yet.",
-  no_email: "The sign-in provider didn't share an email address.",
-  account_disabled: "This account is disabled. Contact an administrator.",
-  signup_closed: "Sign-ups are closed. Ask an administrator for an account.",
-  signup_domain: "Your email address isn't from a domain that can sign up here.",
-  signup_invite_only: "Sign-ups are by invitation only. Use the link from your invitation.",
-  setup_required: "This app isn't set up yet - create the admin account first.",
-  provider_unreachable: "The sign-in provider can't be reached right now. Try again in a moment.",
-};
-
 // oxlint-disable-next-line react/only-export-components
-export function ssoErrorMessage(code: string | null | undefined): string | null {
+export function ssoErrorMessage(code: string | null | undefined, locale?: Locale): string | null {
   if (!code) return null;
-  return SSO_ERRORS[code] ?? "Signing in didn't work. Try again, or contact an administrator.";
+  const t = translator(messages, locale);
+  const key = `error.${code}`;
+  return key in messages.en ? t(key as keyof typeof messages.en) : t("error.unknown");
 }
 
 /**
@@ -34,6 +25,7 @@ export function ssoErrorMessage(code: string | null | undefined): string | null 
  * host's route-config loader).
  */
 export default function SsoButton({ sso, next, primary }: { sso: SsoProvider[]; next?: string; primary?: boolean }) {
+  const t = useT(messages);
   const query = next && next !== "/" ? `next=${encodeURIComponent(next)}` : "";
   return (
     <div className="d-grid gap-2">
@@ -50,7 +42,7 @@ export default function SsoButton({ sso, next, primary }: { sso: SsoProvider[]; 
             href={`${API_BASE_URL}${provider.start_url}${query && (provider.start_url.includes("?") ? "&" : "?")}${query}`}
           >
             <Logo />
-            <span>Continue with {provider.label}</span>
+            <span>{t("continueWith", { provider: provider.label })}</span>
           </a>
         );
       })}

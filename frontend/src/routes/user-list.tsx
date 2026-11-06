@@ -2,10 +2,12 @@ import { useState } from "react";
 import { CrudListScreen, type LinkComponentProps } from "platform-core";
 import { Link as RouterLink, useLocation, useOutletContext } from "react-router";
 import InviteUserCard from "../screens/InviteUserCard";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Users" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("users") }];
 }
 
 function CrudLink({ to, className, children, ...rest }: LinkComponentProps) {

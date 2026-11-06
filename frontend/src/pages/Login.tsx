@@ -1,20 +1,25 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useT, type Translate } from "platform-core";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api/client";
 import type { Session } from "../lib/api/auth";
 import { useAuthConfig } from "../auth/useAuthConfig";
 import { CheckEmailNotice } from "../screens/AccountScreens";
 import SsoButton, { ssoErrorMessage } from "../screens/SsoButton";
+import AuthCard from "./AuthCard";
+import messages from "./messages";
 
-const loginSchema = z.object({
-  email: z.string().trim().min(1, "Email is required."),
-  password: z.string().min(1, "Password is required."),
-});
+function loginSchema(t: Translate<(typeof messages)["en"]>) {
+  return z.object({
+    email: z.string().trim().min(1, t("emailRequired")),
+    password: z.string().min(1, t("passwordRequired")),
+  });
+}
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<ReturnType<typeof loginSchema>>;
 
 export interface LoginProps {
   /**
@@ -40,9 +45,13 @@ export interface LoginProps {
 }
 
 function Login({ onSuccess, title = "platform-auth", footer, forgotPassword, next, ssoError }: LoginProps) {
+  const t = useT(messages);
   const { login } = useAuth();
   const config = useAuthConfig();
-  const [error, setError] = useState<string | null>(ssoErrorMessage(ssoError));
+  const [apiError, setError] = useState<string | null>(null);
+  // The `?sso_error=` message shows until the first attempt here (and follows a language switch).
+  const [ssoDismissed, setSsoDismissed] = useState(false);
+  const error = apiError ?? (ssoDismissed ? null : ssoErrorMessage(ssoError, t.locale));
   // Set when the account exists but its email isn't confirmed yet - offers a new link.
   const [unverified, setUnverified] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -51,17 +60,18 @@ function Login({ onSuccess, title = "platform-auth", footer, forgotPassword, nex
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginFormValues>({ resolver: useMemo(() => zodResolver(loginSchema(t)), [t]) });
 
   async function onSubmit(values: LoginFormValues) {
     setError(null);
+    setSsoDismissed(true);
     setUnverified(null);
     setSubmitting(true);
     try {
       const session = await login(values.email, values.password);
       onSuccess(session);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message : t("genericError"));
       const code = err instanceof ApiError ? (err.body as { code?: string } | undefined)?.code : undefined;
       if (code === "email_unverified") setUnverified(values.email);
     } finally {
@@ -70,67 +80,55 @@ function Login({ onSuccess, title = "platform-auth", footer, forgotPassword, nex
   }
 
   return (
-    <div className="min-vh-100 d-flex align-items-center">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-md-6 col-lg-4">
-            <h1 className="h1 text-center mb-4">{title}</h1>
-            <div className="card">
-              <div className="card-body p-4">
-                <p className="text-center mb-3">Sign in to start your session</p>
-                {config && config.sso.length > 0 && (
-                  <>
-                    <SsoButton sso={config.sso} next={next} primary={!config.password_login} />
-                    {config.password_login && <div className="hr-text my-3">or</div>}
-                  </>
-                )}
-                {config && !config.password_login && error && (
-                  <div className="alert alert-danger mt-3 mb-0" role="alert">{error}</div>
-                )}
-                {/* Hidden only once the server says single sign-on is the only way in. */}
-                <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate hidden={config ? !config.password_login : false}>
-                  <div className="mb-3">
-                    <label className="form-label" htmlFor="email">Email</label>
-                    <input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      className={`form-control form-control-sm ${errors.email ? "is-invalid" : ""}`}
-                      {...register("email")}
-                    />
-                    {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label" htmlFor="password">Password</label>
-                    <input
-                      id="password"
-                      type="password"
-                      autoComplete="current-password"
-                      className={`form-control form-control-sm ${errors.password ? "is-invalid" : ""}`}
-                      {...register("password")}
-                    />
-                    {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
-                    {forgotPassword && <div className="mt-1 small">{forgotPassword}</div>}
-                  </div>
-                  {error && <div className="alert alert-danger" role="alert">{error}</div>}
-                  {unverified && (
-                    <div className="mb-3">
-                      <CheckEmailNotice email={unverified} next={next} />
-                    </div>
-                  )}
-                  <div className="d-grid gap-2">
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                      {submitting ? "Signing in..." : "Sign In"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-            {footer && <div className="text-center text-secondary mt-3">{footer}</div>}
-          </div>
+    <AuthCard title={title} footer={footer}>
+      <p className="text-center mb-3">{t("signInIntro")}</p>
+      {config && config.sso.length > 0 && (
+        <>
+          <SsoButton sso={config.sso} next={next} primary={!config.password_login} />
+          {config.password_login && <div className="hr-text my-3">{t("or")}</div>}
+        </>
+      )}
+      {config && !config.password_login && error && (
+        <div className="alert alert-danger mt-3 mb-0" role="alert">{error}</div>
+      )}
+      {/* Hidden only once the server says single sign-on is the only way in. */}
+      <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate hidden={config ? !config.password_login : false}>
+        <div className="mb-3">
+          <label className="form-label" htmlFor="email">{t("email")}</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            className={`form-control form-control-sm ${errors.email ? "is-invalid" : ""}`}
+            {...register("email")}
+          />
+          {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
         </div>
-      </div>
-    </div>
+        <div className="mb-3">
+          <label className="form-label" htmlFor="password">{t("password")}</label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            className={`form-control form-control-sm ${errors.password ? "is-invalid" : ""}`}
+            {...register("password")}
+          />
+          {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
+          {forgotPassword && <div className="mt-1 small">{forgotPassword}</div>}
+        </div>
+        {error && <div className="alert alert-danger" role="alert">{error}</div>}
+        {unverified && (
+          <div className="mb-3">
+            <CheckEmailNotice email={unverified} next={next} />
+          </div>
+        )}
+        <div className="d-grid gap-2">
+          <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+            {submitting ? t("signingIn") : t("signIn")}
+          </button>
+        </div>
+      </form>
+    </AuthCard>
   );
 }
 

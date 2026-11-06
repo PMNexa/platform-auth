@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Button, Card, CardBody, CopyButton } from "platform-core";
+import { Button, Card, CardBody, CopyButton, useT } from "platform-core";
+import messages from "./InviteUserCard.messages";
 import { usersApi } from "../lib/api/admin";
 import { ApiError } from "../lib/api/client";
 
@@ -9,6 +10,7 @@ import { ApiError } from "../lib/api/client";
  * instance without email. `onInvited` lets the host refresh the list.
  */
 export default function InviteUserCard({ accessToken, onInvited }: { accessToken: string; onInvited?: () => void }) {
+  const t = useT(messages);
   const api = useMemo(() => usersApi(accessToken), [accessToken]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -39,24 +41,24 @@ export default function InviteUserCard({ accessToken, onInvited }: { accessToken
       <CardBody>
         {!open ? (
           <Button variant="primary" onClick={() => setOpen(true)}>
-            Invite user
+            {t("inviteUser")}
           </Button>
         ) : (
           <form className="row g-2 align-items-end" onSubmit={submit}>
             <div className="col-12 col-md-4">
-              <label className="form-label" htmlFor="invite-name">Name</label>
+              <label className="form-label" htmlFor="invite-name">{t("name")}</label>
               <input id="invite-name" className="form-control" required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="col-12 col-md-5">
-              <label className="form-label" htmlFor="invite-email">Email</label>
+              <label className="form-label" htmlFor="invite-email">{t("email")}</label>
               <input id="invite-email" type="email" className="form-control" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="col-12 col-md-3 d-flex gap-2">
               <Button type="submit" variant="primary" disabled={busy || !name.trim() || !email.trim()}>
-                Send invitation
+                {t("send")}
               </Button>
               <Button variant="secondary" outline onClick={() => setOpen(false)}>
-                Close
+                {t("close")}
               </Button>
             </div>
           </form>
@@ -65,10 +67,10 @@ export default function InviteUserCard({ accessToken, onInvited }: { accessToken
         {link && (
           <div className="mt-3">
             <div className="small text-secondary mb-1">
-              Invited {link.email} - we emailed them this link to set a password (valid 3 days):
+              {t("invited", { email: link.email })}
             </div>
             <div className="input-group">
-              <input className="form-control form-control-sm font-monospace" readOnly value={link.url} aria-label="Set-password link" />
+              <input className="form-control form-control-sm font-monospace" readOnly value={link.url} aria-label={t("linkLabel")} />
               <CopyButton text={link.url} />
             </div>
           </div>

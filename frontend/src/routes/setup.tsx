@@ -4,6 +4,8 @@ import SignupScreen from "../screens/SignupScreen";
 import { setSession } from "../session";
 import { nextPath } from "./redirect";
 import { useSetupGate } from "./useSetupGate";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 /**
  * First-run onboarding (see `login.tsx`'s docstring for the shape): the
@@ -11,8 +13,8 @@ import { useSetupGate } from "./useSetupGate";
  * Only reachable until the first account exists (`useSetupGate`).
  */
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Set up" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("setUp") }];
 }
 
 export default function SetupRoute() {
