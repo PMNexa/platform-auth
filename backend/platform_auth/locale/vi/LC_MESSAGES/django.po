@@ -1,0 +1,472 @@
+# platform_auth: the API's user-visible texts. Written by `manage.py collect_ui_strings`;
+# fill in msgstr, then `msgfmt -o django.mo django.po`.
+msgid ""
+msgstr ""
+"Project-Id-Version: platform_auth\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: setting auth.lockout_minutes
+msgid "A password reset, or an admin on the user's page, unlocks it sooner."
+msgstr "Đặt lại mật khẩu, hoặc quản trị viên mở khóa trên trang của người dùng, sẽ mở khóa sớm hơn."
+
+#: platform-auth/backend/platform_auth/apps.py:113
+msgid "A version like 1.4.0, or empty."
+msgstr "Một phiên bản như 1.4.0, hoặc để trống."
+
+#: setting apps.min_android_version
+#: setting apps.min_ios_version
+msgid "A version like 1.4.0. Empty: any version."
+msgstr "Một phiên bản như 1.4.0. Để trống: mọi phiên bản."
+
+#: insight signups
+#: insight users
+#: setting auth.allowed_email_domains
+msgid "Accounts"
+msgstr "Tài khoản"
+
+#: insight users
+msgid "Accounts that existed at the end of the day (deleted ones aren't counted)."
+msgstr "Số tài khoản có vào cuối ngày (không tính tài khoản đã xóa)."
+
+#: platform-auth/backend/platform_auth/apps.py:160
+msgid "Active, last 30 days"
+msgstr "Hoạt động, 30 ngày qua"
+
+#: platform-auth/backend/platform_auth/apps.py:159
+msgid "Active, last 7 days"
+msgstr "Hoạt động, 7 ngày qua"
+
+#: platform-auth/backend/platform_auth/views/rbac.py:58
+msgid "Administrators hold this role - it can't be deleted."
+msgstr "Quản trị viên giữ vai trò này - không thể xóa."
+
+#: setting auth.password_login
+msgid "Allow email + password login"
+msgstr "Cho phép đăng nhập bằng email + mật khẩu"
+
+#: setting auth.allowed_email_domains
+msgid "Allowed email domains"
+msgstr "Tên miền email được phép"
+
+#: platform-auth/backend/platform_auth/views/rbac.py:204
+#: platform-auth/backend/platform_auth/views/setup.py:77
+#: platform-auth/backend/platform_auth/views/signup.py:79
+msgid "An account with this email already exists."
+msgstr "Đã có tài khoản dùng email này."
+
+#: setting auth.signup_policy
+msgid "Anyone"
+msgstr "Bất kỳ ai"
+
+#: schema platform_auth.Role.assignments
+msgid "Assignments"
+msgstr "Phân vai trò"
+
+#: platform-auth/backend/platform_auth/apps.py:104
+msgid "Between {minimum} and {maximum}."
+msgstr "Từ {minimum} đến {maximum}."
+
+#: platform-auth/backend/platform_auth/views/account.py:156
+msgid "Change your own password from your own session."
+msgstr "Hãy đổi mật khẩu của bạn từ phiên đăng nhập của chính bạn."
+
+#: platform-auth/backend/platform_auth/views/me.py:58
+msgid "Change your own preferences from your own session."
+msgstr "Hãy đổi tùy chọn của bạn từ phiên đăng nhập của chính bạn."
+
+#: schema platform_auth.Permission.codename
+msgid "Codename"
+msgstr "Mã quyền"
+
+#: platform-auth/backend/platform_auth/views/login.py:48
+msgid "Confirm your email first - check your inbox for the link."
+msgstr "Hãy xác nhận email trước - kiểm tra hộp thư để lấy liên kết."
+
+#: schema platform_auth.RoleAssignment.created_at
+#: schema platform_auth.User.created_at
+msgid "Created at"
+msgstr "Tạo lúc"
+
+#: platform-auth/backend/platform_auth/views/account.py:190
+msgid "Delete your own account from your own session."
+msgstr "Hãy xóa tài khoản của bạn từ phiên đăng nhập của chính bạn."
+
+#: schema platform_auth.Role.description
+msgid "Description"
+msgstr "Mô tả"
+
+#: platform-auth/backend/platform_auth/apps.py:162
+msgid "Disabled"
+msgstr "Đã vô hiệu hóa"
+
+#: schema platform_auth.User.email
+msgid "Email"
+msgstr "Email"
+
+#: platform-auth/backend/platform_auth/apps.py:163
+msgid "Email not confirmed"
+msgstr "Chưa xác nhận email"
+
+#: schema platform_auth.User.email_verified_at
+msgid "Email verified at"
+msgstr "Xác nhận email lúc"
+
+#: schema platform_auth.RoleAssignment.scope_id
+msgid "Empty: the role applies app-wide. Set: only within that scope."
+msgstr "Để trống: vai trò áp dụng cho toàn ứng dụng. Có giá trị: chỉ trong phạm vi đó."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:243
+#: platform-auth/backend/platform_auth/views/rbac.py:298
+msgid "Enable the account first."
+msgstr "Hãy kích hoạt lại tài khoản trước."
+
+#: schema platform_auth.Role.grants_all
+msgid "Every permission, including ones added later."
+msgstr "Mọi quyền, kể cả các quyền được thêm sau này."
+
+#: platform-auth/backend/platform_auth/views/account.py:180
+msgid "Export your own data from your own session."
+msgstr "Hãy xuất dữ liệu của bạn từ phiên đăng nhập của chính bạn."
+
+#: platform-auth/backend/platform_auth/views/setup.py:52
+msgid "First-run setup is turned off here - sign up instead."
+msgstr "Thiết lập lần đầu đã tắt ở đây - hãy đăng ký."
+
+#: setting auth.password_min_length
+msgid "For new passwords - signup, reset and change. Existing passwords keep working."
+msgstr "Áp dụng cho mật khẩu mới - khi đăng ký, đặt lại và đổi mật khẩu. Mật khẩu hiện có vẫn dùng được."
+
+#: schema platform_auth.Role.is_default
+msgid "Given app-wide to every new user."
+msgstr "Được gán cho mọi người dùng mới trên toàn ứng dụng."
+
+#: schema platform_auth.Role.grants_all
+msgid "Grants all"
+msgstr "Toàn quyền"
+
+#: schema platform_auth.Permission.id
+#: schema platform_auth.Role.id
+#: schema platform_auth.RoleAssignment.id
+msgid "Id"
+msgstr "ID"
+
+#: platform-auth/backend/platform_auth/views/rbac.py:165
+msgid "Invite a user instead (users/invite)."
+msgstr "Hãy mời người dùng thay vào đó (users/invite)."
+
+#: setting auth.signup_policy
+msgid "Invited people only"
+msgstr "Chỉ người được mời"
+
+#: setting auth.signup_policy
+msgid "Invited: someone with a pending organization invitation. Admins can always invite from the Users page."
+msgstr "Được mời: người có lời mời vào tổ chức đang chờ. Quản trị viên luôn có thể mời từ trang Người dùng."
+
+#: schema platform_auth.User.is_active
+msgid "Is active"
+msgstr "Đang hoạt động"
+
+#: schema platform_auth.Role.is_default
+msgid "Is default"
+msgstr "Mặc định"
+
+#: schema platform_auth.Permission.label
+msgid "Label"
+msgstr "Nhãn"
+
+#: schema platform_auth.User.last_login_at
+msgid "Last login at"
+msgstr "Đăng nhập lần cuối lúc"
+
+#: setting auth.lockout_attempts
+msgid "Lock an account after failed logins"
+msgstr "Khóa tài khoản sau khi đăng nhập sai"
+
+#: setting auth.lockout_minutes
+msgid "Lock it for (minutes)"
+msgstr "Khóa trong (phút)"
+
+#: schema platform_auth.User.locked_until
+msgid "Locked until"
+msgstr "Bị khóa đến"
+
+#: setting auth.password_min_length
+msgid "Minimum password length"
+msgstr "Độ dài mật khẩu tối thiểu"
+
+#: schema platform_auth.Role.name
+#: schema platform_auth.User.name
+msgid "Name"
+msgstr "Tên"
+
+#: setting auth.require_email_verification
+msgid "New accounts confirm their email before they can log in. Needs email to be configured."
+msgstr "Tài khoản mới phải xác nhận email trước khi đăng nhập. Cần cấu hình email."
+
+#: platform-auth/backend/platform_auth/apps.py:161
+msgid "New, last 7 days"
+msgstr "Mới, 7 ngày qua"
+
+#: setting auth.signup_policy
+msgid "Nobody (admins invite users)"
+msgstr "Không ai (quản trị viên mời người dùng)"
+
+#: platform-auth/backend/platform_auth/views/me.py:34
+msgid "Not a supported language: {languages}."
+msgstr "Ngôn ngữ không được hỗ trợ: {languages}."
+
+#: platform-auth/backend/platform_auth/sso.py:342
+msgid "Not an http(s) URL."
+msgstr "Không phải URL http(s)."
+
+#: setting auth.password_login
+msgid "Off: single sign-on is the only way in. Only applies while SSO is configured (OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_PROVIDERS). If the provider breaks, AUTH_PASSWORD_LOGIN=true in the environment turns it back on."
+msgstr "Tắt: chỉ đăng nhập được bằng đăng nhập một lần (SSO). Chỉ áp dụng khi đã cấu hình SSO (OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET hoặc OIDC_PROVIDERS). Nếu nhà cung cấp gặp sự cố, đặt AUTH_PASSWORD_LOGIN=true trong biến môi trường để bật lại."
+
+#: setting apps.min_android_version
+msgid "Oldest Android app allowed"
+msgstr "Phiên bản ứng dụng Android cũ nhất được phép"
+
+#: setting apps.min_ios_version
+msgid "Oldest iOS app allowed"
+msgstr "Phiên bản ứng dụng iOS cũ nhất được phép"
+
+#: schema platform_auth.RoleAssignment.scope_id
+msgid "Organization"
+msgstr "Tổ chức"
+
+#: platform-auth/backend/platform_auth/accounts.py:40
+msgid "Password login is turned off here - sign in with {provider} instead."
+msgstr "Đăng nhập bằng mật khẩu đã tắt ở đây - hãy đăng nhập bằng {provider}."
+
+#: schema platform_auth.Permission
+msgid "permission"
+msgstr "quyền"
+
+#: schema platform_auth.Role.permissions
+msgid "Permissions"
+msgstr "Quyền"
+
+#: schema platform_auth.Permission
+msgid "permissions"
+msgstr "quyền"
+
+#: setting apps.min_android_version
+#: setting apps.min_ios_version
+msgid "Phone apps"
+msgstr "Ứng dụng điện thoại"
+
+#: platform-auth/backend/platform_auth/views/rbac.py:278
+msgid "Pick another active user to take over."
+msgstr "Hãy chọn một người dùng khác đang hoạt động để tiếp quản."
+
+#: setting auth.password_reject_common
+msgid "Refuses the 20,000 most common passwords (password123, qwerty, ...)."
+msgstr "Từ chối 20.000 mật khẩu phổ biến nhất (password123, qwerty, ...)."
+
+#: setting auth.password_reject_common
+msgid "Reject common passwords"
+msgstr "Từ chối mật khẩu phổ biến"
+
+#: setting auth.require_email_verification
+msgid "Require email verification"
+msgstr "Yêu cầu xác nhận email"
+
+#: schema platform_auth.Permission.resource
+msgid "Resource"
+msgstr "Tài nguyên"
+
+#: schema platform_auth.RoleAssignment.role
+msgid "Role"
+msgstr "Vai trò"
+
+#: schema platform_auth.Role
+msgid "role"
+msgstr "vai trò"
+
+#: schema platform_auth.RoleAssignment
+msgid "role assignment"
+msgstr "phân vai trò"
+
+#: schema platform_auth.User.role_assignments
+msgid "Role assignments"
+msgstr "Phân vai trò"
+
+#: schema platform_auth.RoleAssignment
+msgid "role assignments"
+msgstr "phân vai trò"
+
+#: schema platform_auth.Permission.roles
+msgid "Roles"
+msgstr "Vai trò"
+
+#: schema platform_auth.Role
+msgid "roles"
+msgstr "vai trò"
+
+#: setting auth.sso_label
+msgid "Shown as \"Sign in with ...\", e.g. Google or your company's name. Empty: SSO. For the provider set with OIDC_ISSUER; the ones in OIDC_PROVIDERS carry their own label."
+msgstr "Hiển thị dạng \"Đăng nhập bằng ...\", ví dụ Google hoặc tên công ty bạn. Để trống: SSO. Dành cho nhà cung cấp đặt bằng OIDC_ISSUER; các nhà cung cấp trong OIDC_PROVIDERS có nhãn riêng."
+
+#: insight signups
+msgid "Sign-ups"
+msgstr "Lượt đăng ký"
+
+#: setting auth.allowed_email_domains
+msgid "Sign-ups only from these domains, one per line (e.g. acme.com). Empty: any."
+msgstr "Chỉ cho đăng ký từ các tên miền này, mỗi dòng một tên miền (ví dụ acme.com). Để trống: mọi tên miền."
+
+#: setting auth.password_login
+#: setting auth.sso_label
+msgid "Single sign-on"
+msgstr "Đăng nhập một lần (SSO)"
+
+#: setting auth.sso_label
+msgid "Single sign-on button"
+msgstr "Nút đăng nhập một lần (SSO)"
+
+#: schema platform_auth.RoleAssignment.summary
+msgid "Summary"
+msgstr "Tóm tắt"
+
+#: platform-auth/backend/platform_auth/views/account.py:161
+msgid "That's not your current password."
+msgstr "Đó không phải mật khẩu hiện tại của bạn."
+
+#: platform-auth/backend/platform_auth/views/account.py:195
+msgid "That's not your password."
+msgstr "Đó không phải mật khẩu của bạn."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:296
+msgid "That's you."
+msgstr "Đó là bạn."
+
+#: platform-auth/backend/platform_auth/sso.py:259
+msgid "The id token's nonce doesn't match."
+msgstr "Giá trị nonce của id_token không khớp."
+
+#: platform-auth/backend/platform_auth/sso.py:243
+msgid "The provider returned no id_token."
+msgstr "Nhà cung cấp không trả về id_token."
+
+#: platform-auth/backend/platform_auth/sso.py:188
+msgid "The provider's issuer doesn't match the configured one."
+msgstr "Issuer của nhà cung cấp không khớp với giá trị đã cấu hình."
+
+#: platform-auth/backend/platform_auth/authentication.py:35
+#: platform-auth/backend/platform_auth/views/refresh.py:32
+msgid "This account is disabled."
+msgstr "Tài khoản này đã bị vô hiệu hóa."
+
+#: platform-auth/backend/platform_auth/views/account.py:121
+#: platform-auth/backend/platform_auth/views/account.py:72
+#: platform-auth/backend/platform_auth/views/login.py:46
+msgid "This account is disabled. Contact an administrator."
+msgstr "Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."
+
+#: platform-auth/backend/platform_auth/views/sso.py:141
+msgid "This app address isn't allowed here."
+msgstr "Địa chỉ ứng dụng này không được phép ở đây."
+
+#: platform-auth/backend/platform_auth/views/setup.py:67
+msgid "This app is already set up - log in instead."
+msgstr "Ứng dụng đã được thiết lập - hãy đăng nhập."
+
+#: platform-auth/backend/platform_auth/views/signup.py:57
+msgid "This app isn't set up yet - create the admin account first."
+msgstr "Ứng dụng chưa được thiết lập - hãy tạo tài khoản quản trị viên trước."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:92
+msgid "This field is required."
+msgstr "Trường này là bắt buộc."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:183
+msgid "This is the last administrator - make someone else one before you delete it."
+msgstr "Đây là quản trị viên cuối cùng - hãy cấp quyền quản trị viên cho người khác trước khi xóa."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:181
+msgid "This is the last administrator - make someone else one before you disable it."
+msgstr "Đây là quản trị viên cuối cùng - hãy cấp quyền quản trị viên cho người khác trước khi vô hiệu hóa."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:104
+msgid "This is the last administrator - make someone else one first."
+msgstr "Đây là quản trị viên cuối cùng - hãy cấp quyền quản trị viên cho người khác trước."
+
+#: platform-auth/backend/platform_auth/views/account.py:57
+msgid "This link is invalid or has expired. Ask for a new one."
+msgstr "Liên kết này không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới."
+
+#: platform-auth/backend/platform_auth/views/sso.py:233
+#: platform-auth/backend/platform_auth/views/sso.py:243
+msgid "This sign-in link has expired. Sign in again."
+msgstr "Liên kết đăng nhập này đã hết hạn. Hãy đăng nhập lại."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:98
+msgid "This user already has this role there."
+msgstr "Người dùng này đã có vai trò này ở đó."
+
+#: platform-auth/backend/platform_auth/lockout.py:29
+msgid "Too many failed attempts - this account is locked for 1 more minute. Resetting your password unlocks it."
+msgstr "Quá nhiều lần thử sai - tài khoản này bị khóa thêm 1 phút. Đặt lại mật khẩu để mở khóa."
+
+#: platform-auth/backend/platform_auth/lockout.py:31
+msgid "Too many failed attempts - this account is locked for {minutes} more minutes. Resetting your password unlocks it."
+msgstr "Quá nhiều lần thử sai - tài khoản này bị khóa thêm {minutes} phút. Đặt lại mật khẩu để mở khóa."
+
+#: schema platform_auth.RoleAssignment.user
+msgid "User"
+msgstr "Người dùng"
+
+#: schema platform_auth.User
+msgid "user"
+msgstr "người dùng"
+
+#: insight users
+#: platform-auth/backend/platform_auth/apps.py:158
+msgid "Users"
+msgstr "Người dùng"
+
+#: schema platform_auth.User
+msgid "users"
+msgstr "người dùng"
+
+#: schema platform_auth.Permission.verb
+msgid "Verb"
+msgstr "Hành động"
+
+#: platform-auth/backend/platform_auth/apps.py:159
+#: platform-auth/backend/platform_auth/apps.py:160
+msgid "Website or AI assistant"
+msgstr "Trang web hoặc Trợ lý AI"
+
+#: setting auth.signup_policy
+msgid "Who can sign up"
+msgstr "Ai có thể đăng ký"
+
+#: setting auth.lockout_attempts
+msgid "Wrong passwords in a row before the account is locked. 0: never lock."
+msgstr "Số lần nhập sai mật khẩu liên tiếp trước khi khóa tài khoản. 0: không bao giờ khóa."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:182
+msgid "You can't delete your own account."
+msgstr "Bạn không thể xóa tài khoản của chính mình."
+
+#: platform-auth/backend/platform_auth/views/rbac.py:180
+msgid "You can't disable your own account."
+msgstr "Bạn không thể vô hiệu hóa tài khoản của chính mình."
+
+#: platform-auth/backend/platform_auth/views/account.py:197
+msgid "You're the last administrator - make someone else one first."
+msgstr "Bạn là quản trị viên cuối cùng - hãy cấp quyền quản trị viên cho người khác trước."
+
+#: platform-auth/backend/platform_auth/authentication.py:39
+msgid "You're viewing as this user - read-only."
+msgstr "Bạn đang xem với tư cách người dùng này - chỉ đọc."
+
+#: platform-auth/backend/platform_auth/apps.py:103
+msgid "{minimum} or more."
+msgstr "Từ {minimum} trở lên."

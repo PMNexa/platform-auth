@@ -5,6 +5,7 @@ and are themselves guarded by RBAC (`roles.update`, `users.view`, ...).
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_noop
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -12,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core_api.errors import ConflictError
+from core_api.i18n import tr
 from core_api.system import audit, session_providers
 from platform_auth.accounts import is_last_admin, reset_url, send_invitation, send_notice
 from platform_auth.models import UNUSABLE_PASSWORD, RefreshToken
@@ -174,11 +176,19 @@ class UserViewSet(BaseViewSet):
         if user.name != before:
             audit("user.renamed", request=self.request, target=user, before=before, after=user.name)
 
+    _GUARD_MESSAGES = {
+        "disable": (gettext_noop("You can't disable your own account."),
+                    gettext_noop("This is the last administrator - make someone else one before you disable it.")),
+        "delete": (gettext_noop("You can't delete your own account."),
+                   gettext_noop("This is the last administrator - make someone else one before you delete it.")),
+    }
+
     def _guard(self, user, verb: str):
+        own, last = self._GUARD_MESSAGES[verb]
         if str(user.id) == str(self.request.user.id):
-            raise ValidationError({"user": [f"You can't {verb} your own account."]})
+            raise ValidationError({"user": [gettext(own)]})
         if is_last_admin(user):
-            raise ValidationError({"user": [f"This is the last administrator - make someone else one before you {verb} it."]})
+            raise ValidationError({"user": [gettext(last)]})
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
@@ -246,7 +256,7 @@ class UserViewSet(BaseViewSet):
                 for t in logins
             ],
             "other": [
-                {"kind": p.kind, "label": p.label, "items": p.list(str(user.id))} for p in session_providers()
+                {"kind": p.kind, "label": tr(p.label), "items": p.list(str(user.id))} for p in session_providers()
             ],
         })
 

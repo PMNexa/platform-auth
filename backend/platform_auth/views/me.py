@@ -2,6 +2,7 @@
 preferences (the UI `language`)."""
 
 from django.conf import settings
+from django.utils.translation import gettext
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,7 +31,7 @@ class _MePatchSerializer(serializers.Serializer):
 
     def validate_language(self, value):
         if value and value not in language_codes():
-            raise serializers.ValidationError(f"Not a supported language: {', '.join(language_codes())}.")
+            raise serializers.ValidationError(gettext("Not a supported language: {languages}.").format(languages=", ".join(language_codes())))
         return value
 
 
